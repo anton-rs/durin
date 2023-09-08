@@ -1,0 +1,9 @@
+[package]
+name = "durin-primitives"
+description = "Primitive types for Durin."
+authors = ["clabby"]
+version = "0.1.0"
+
+[dependencies]
+anyhow = "1.0.75"
+tracing = "0.1.37"
