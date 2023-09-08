@@ -1,2 +1,7 @@
 [workspace]
+resolver = "2"
 members = ["crates/primitives"]
+
+[workspace.package]
+edition = "2021"
+version = "0.0.1"
