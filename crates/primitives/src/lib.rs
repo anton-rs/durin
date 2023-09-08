@@ -9,3 +9,6 @@ pub use dispute_game::{Claim, GameStatus, GameType};
 
 mod traits;
 pub use traits::{DisputeAgent, DisputeGame};
+
+mod fault;
+pub use fault::prelude::*;
