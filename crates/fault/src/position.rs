@@ -1,6 +1,6 @@
 //! The position module holds the [Position] trait and its implementations.
 
-use crate::Position;
+use crate::prelude::Position;
 
 /// Computes a generalized index from a depth and index at depth.
 ///

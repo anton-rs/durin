@@ -22,7 +22,7 @@ use alloy_primitives::Bytes;
 ///       i.e. onchain vs. local vs. arbiter, etc. We'll need another trait that describes
 ///       the generic interaction with the backend for a [DisputeGame], and another for
 ///       a [crate::FaultDisputeGame].
-pub trait DisputeGame<BE> {
+pub trait DisputeGame {
     /// Returns the root claim of the dispute game. The root claim is a 32 byte
     /// commitment to what is being disputed.
     ///
@@ -53,6 +53,6 @@ pub trait DisputeGame<BE> {
 /// only enforces functionality that is common to all dispute agents.
 ///
 /// All other agent traits should be subtraits of the [DisputeAgent].
-pub trait DisputeAgent<BE, DG: DisputeGame<BE>> {
+pub trait DisputeAgent<DG: DisputeGame> {
     /* todo */
 }

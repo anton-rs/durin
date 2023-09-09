@@ -1,11 +1,11 @@
 //! This module holds traits related to the [FaultDisputeGame]
 
-use crate::DisputeGame;
+use durin_primitives::DisputeGame;
 
 /// A [FaultDisputeGame] is a [DisputeGame] that is played over a [FaultVM] backend. This
 /// trait extends the [DisputeGame] trait with functionality that is specific to the
 /// fault [crate::dispute_game::GameType] variants.
-pub trait FaultDisputeGame<BE>: DisputeGame<BE> {
+pub trait FaultDisputeGame: DisputeGame {
     /* todo */
 }
 
