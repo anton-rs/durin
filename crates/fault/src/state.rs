@@ -3,27 +3,27 @@
 
 #![allow(dead_code, unused_variables)]
 
-use crate::prelude::{FaultDisputeGame, Position};
+use crate::prelude::{Clock, FaultDisputeGame, Position};
 use durin_primitives::{Claim, DisputeGame, GameStatus};
 
 /// The [ClaimData] struct holds the data associated with a claim within a
 /// [crate::prelude::FaultDisputeGame]'s state on-chain.
-pub struct ClaimData<P: Position> {
+pub struct ClaimData {
     parent_index: u32,
     countered: bool,
     value: Claim,
-    position: P,
-    clock: u64,
+    position: Position,
+    clock: Clock,
 }
 
 /// the [FaultDisputeState] struct holds the in-memory representation of a
 /// [crate::prelude::FaultDisputeGame]'s state as well as its root claim and
 /// local status.
-pub struct FaultDisputeState<P: Position> {
+pub struct FaultDisputeState {
     /// The [FaultDisputeState] is modeled as a directed acyclical graph (DAG) of
     /// [ClaimData] structs pointing to their parents, all the way up to the root
     /// claim of the dispute game.
-    pub state: Vec<ClaimData<P>>,
+    state: Vec<ClaimData>,
     /// The root claim is the claim that commits to the entirety of the backend
     /// VM's trace. The outcome of the game determines if this claim is true or
     /// false.
@@ -32,7 +32,7 @@ pub struct FaultDisputeState<P: Position> {
     status: GameStatus,
 }
 
-impl DisputeGame for FaultDisputeState<u128> {
+impl DisputeGame for FaultDisputeState {
     fn root_claim(&self) -> Claim {
         self.root_claim
     }
@@ -46,12 +46,12 @@ impl DisputeGame for FaultDisputeState<u128> {
     }
 }
 
-impl FaultDisputeGame<u128> for FaultDisputeState<u128> {
-    fn step(&mut self, claim: ClaimData<u128>, is_attack: bool) -> anyhow::Result<()> {
-        todo!()
+impl FaultDisputeGame for FaultDisputeState {
+    fn state(&self) -> &Vec<ClaimData> {
+        &self.state
     }
 
-    fn do_move(&mut self, claim: ClaimData<u128>, is_attack: bool) -> anyhow::Result<()> {
-        todo!()
+    fn state_mut(&mut self) -> &mut Vec<ClaimData> {
+        &mut self.state
     }
 }

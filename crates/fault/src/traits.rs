@@ -1,6 +1,7 @@
 //! This module holds traits related to the [FaultDisputeGame]
 
 use crate::{
+    position::Position,
     prelude::FaultSolverResponse,
     state::{ClaimData, FaultDisputeState},
 };
@@ -9,25 +10,25 @@ use durin_primitives::{Claim, DisputeGame, DisputeSolver};
 /// A [FaultDisputeGame] is a [DisputeGame] that is played over a [FaultVM] backend. This
 /// trait extends the [DisputeGame] trait with functionality that is specific to the
 /// fault [crate::dispute_game::GameType] variants.
-pub trait FaultDisputeGame<P: Position>: DisputeGame {
-    /// Performs an move against the given [ClaimData].
-    fn do_move(&mut self, claim: ClaimData<P>, is_attack: bool) -> anyhow::Result<()>;
+pub trait FaultDisputeGame: DisputeGame {
+    /// Returns a shared reference to the raw state of the game DAG.
+    fn state(&self) -> &Vec<ClaimData>;
 
-    /// Step against the given [ClaimData].
-    fn step(&mut self, claim: ClaimData<P>, is_attack: bool) -> anyhow::Result<()>;
+    /// Returns a mutable reference to the raw state of the game DAG.
+    fn state_mut(&mut self) -> &mut Vec<ClaimData>;
 }
 
-pub trait FaultDisputeSolver: DisputeSolver<FaultSolverResponse, FaultDisputeState<u128>> {
+pub trait FaultDisputeSolver: DisputeSolver<FaultDisputeState, Claim, FaultSolverResponse> {
     /// Returns the raw state (in bytes) at the given position.
-    fn trace_at(&self, position: u128) -> anyhow::Result<Vec<u8>>;
+    fn trace_at(&self, position: Position) -> anyhow::Result<Vec<u8>>;
 
     /// Returns the state hash (in bytes) at the given position.
-    fn state_hash(&self, position: u128) -> anyhow::Result<Claim>;
+    fn state_hash(&self, position: Position) -> anyhow::Result<Claim>;
 }
 
-/// The [Position] trait defines the interface of a generalized index within a binary tree.
+/// The [Gindex] trait defines the interface of a generalized index within a binary tree.
 /// A "Generalized Index" is calculated as `2^{depth} + index_at_depth`.
-pub trait Position {
+pub trait Gindex {
     /// Returns the depth of the [Position] within the tree.
     fn depth(&self) -> u8;
 

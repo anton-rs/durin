@@ -1,6 +1,9 @@
-//! The position module holds the [Position] trait and its implementations.
+//! The position module holds the [Position] type and the implementation of the [Gindex]
+//! trait on it.
 
-use crate::prelude::Position;
+use crate::prelude::Gindex;
+
+pub type Position = u128;
 
 /// Computes a generalized index from a depth and index at depth.
 ///
@@ -14,8 +17,8 @@ pub fn compute_gindex(depth: u8, index_at_depth: u64) -> u128 {
     2u128.pow(depth as u32) + index_at_depth as u128
 }
 
-/// Implementation of the [Position] trait for the [std::u128] primitive type.
-impl Position for u128 {
+/// Implementation of the [Gindex] trait for the [Position] type alias.
+impl Gindex for Position {
     fn depth(&self) -> u8 {
         127 - self.leading_zeros() as u8
     }
@@ -52,7 +55,7 @@ impl Position for u128 {
 
 #[cfg(test)]
 mod test {
-    use super::Position;
+    use super::{Gindex, Position};
 
     /// A helper struct for testing the [Position] trait implementation for [std::u128].
     /// 0. `u64` - `depth`
@@ -99,7 +102,7 @@ mod test {
     #[test]
     fn position_correctness_static() {
         for (p, v) in EXPECTED_VALUES.iter().enumerate() {
-            let pos = (p + 1) as u128;
+            let pos = (p + 1) as Position;
             assert_eq!(pos.depth(), v.0);
             assert_eq!(pos.index_at_depth(), v.1);
             let r = pos.right_index(MAX_DEPTH);

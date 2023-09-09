@@ -2,11 +2,12 @@
 
 extern crate durin_primitives;
 
+mod clock;
 mod position;
 mod response;
 mod state;
 mod traits;
 
 pub mod prelude {
-    pub use super::{position::*, response::*, traits::*};
+    pub use super::{clock::*, position::*, response::*, traits::*};
 }
