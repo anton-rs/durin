@@ -4,16 +4,10 @@ extern crate alloy_primitives;
 extern crate alloy_sol_types;
 extern crate durin_primitives;
 
-mod clock;
-pub use clock::Clock;
-
-mod position;
-pub use position::{compute_gindex, Position};
+mod types;
+pub use types::*;
 
 mod providers;
-
-mod response;
-pub use response::FaultSolverResponse;
 
 mod state;
 pub use state::{ClaimData, FaultDisputeState};

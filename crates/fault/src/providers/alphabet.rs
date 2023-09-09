@@ -1,6 +1,7 @@
-//! This modules contains trace providers for the variants of the [crate::FaultDisputeGame].
+//! This module contains the implementation of the [crate::TraceProvider] trait for the
+//! mock Alphabet VM.
 
-use crate::{Gindex, Position, TraceProvider};
+use crate::{Gindex, Position, TraceProvider, VMStatus};
 use alloy_primitives::{keccak256, U256};
 use alloy_sol_types::{sol, SolType};
 use durin_primitives::Claim;
@@ -18,7 +19,7 @@ sol! {
 }
 
 /// The [AlphabetTraceProvider] is a [TraceProvider] that provides the
-struct AlphabetTraceProvider {
+pub struct AlphabetTraceProvider {
     /// The absolute prestate of the alphabet VM is the setup state.
     /// This will be the ascii representation of letter prior to the first
     /// in the honest alphabet trace.
@@ -36,7 +37,9 @@ impl TraceProvider<u8> for AlphabetTraceProvider {
         let prestate_sol = AlphabetPrestate {
             letter: self.absolute_prestate,
         };
-        keccak256(AlphabetPrestate::encode(&prestate_sol))
+        let mut prestate_hash = keccak256(AlphabetPrestate::encode(&prestate_sol));
+        prestate_hash[0] = VMStatus::Unfinished as u8;
+        prestate_hash
     }
 
     fn trace_at(&self, position: Position) -> anyhow::Result<u8> {
@@ -53,7 +56,9 @@ impl TraceProvider<u8> for AlphabetTraceProvider {
             instruction: U256::from(position.trace_index(self.max_depth)),
             claim: U256::from(self.trace_at(position)?),
         };
-        Ok(keccak256(AlphabetEncoding::encode(&state_sol)))
+        let mut state_hash = keccak256(AlphabetEncoding::encode(&state_sol));
+        state_hash[0] = VMStatus::Invalid as u8;
+        Ok(state_hash)
     }
 }
 
@@ -79,9 +84,10 @@ mod test {
             prestate.as_slice()
         );
 
-        let prestate_hash = provider.absolute_prestate_hash();
+        let mut prestate_hash = provider.absolute_prestate_hash();
+        prestate_hash[0] = VMStatus::Unfinished as u8;
         assert_eq!(
-            hex!("f0ecb75dd1820844c57b6762233d4e26853b3a7b8157bbd9f41f280a0f1cee9b"),
+            hex!("03ecb75dd1820844c57b6762233d4e26853b3a7b8157bbd9f41f280a0f1cee9b"),
             prestate_hash.as_slice()
         );
     }
@@ -101,7 +107,8 @@ mod test {
                 instruction: U256::from(i),
                 claim: U256::from(expected),
             };
-            let expected_hash = keccak256(AlphabetEncoding::encode(expected_encoded));
+            let mut expected_hash = keccak256(AlphabetEncoding::encode(expected_encoded));
+            expected_hash[0] = VMStatus::Invalid as u8;
 
             assert_eq!(provider.trace_at(position).unwrap(), expected);
             assert_eq!(provider.state_hash(position).unwrap(), expected_hash);

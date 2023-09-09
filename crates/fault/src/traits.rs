@@ -1,9 +1,8 @@
 //! This module holds traits related to the [FaultDisputeGame]
 
 use crate::{
-    position::Position,
     state::{ClaimData, FaultDisputeState},
-    FaultSolverResponse,
+    FaultSolverResponse, Position,
 };
 use durin_primitives::{Claim, DisputeGame, DisputeSolver};
 

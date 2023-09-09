@@ -1,9 +1,33 @@
-//! The position module holds the [Position] type and the implementation of the [Gindex]
-//! trait on it.
+//! The position module holds the types specific to the [crate::FaultDisputeGame] solver.
 
+use crate::ChessClock;
 use crate::Gindex;
 
 pub type Position = u128;
+pub type Clock = u128;
+
+/// The [FaultSolverResponse] enum describes the response that a solver should
+/// return when asked to make a move.
+pub enum FaultSolverResponse {
+    /// A response indicating that the proper move is to attack the given claim.
+    Attack,
+    /// A response indicating that the proper move is to defend the given claim.
+    Defend,
+    /// A response indicating that the proper move is to skip the given claim.
+    Skip,
+}
+
+/// The [VMStatus] enum describes the status of a VM at a given position.
+/// - [VMStatus::Valid]: The VM is exited with a valid status.
+/// - [VMStatus::Invalid]: The VM is exited with an invalid status.
+/// - [VMStatus::Panic]: The VM is exited with a panic status.
+/// - [VMStatus::Unfinished]: The VM is not yet exited.
+pub enum VMStatus {
+    Valid = 0,
+    Invalid = 1,
+    Panic = 2,
+    Unfinished = 3,
+}
 
 /// Computes a generalized index from a depth and index at depth.
 ///
@@ -53,9 +77,27 @@ impl Gindex for Position {
     }
 }
 
+impl ChessClock for Clock {
+    fn duration(&self) -> u64 {
+        (self >> 64) as u64
+    }
+
+    fn timestamp(&self) -> u64 {
+        (self & u64::MAX as u128) as u64
+    }
+}
+
 #[cfg(test)]
 mod test {
+    use super::ChessClock;
     use super::{Gindex, Position};
+
+    #[test]
+    fn chess_clock_correctness() {
+        let clock = 0xa5000000000000001;
+        assert_eq!(clock.duration(), 10);
+        assert_eq!(clock.timestamp(), 5764607523034234881);
+    }
 
     /// A helper struct for testing the [Position] trait implementation for [std::u128].
     /// 0. `u64` - `depth`
