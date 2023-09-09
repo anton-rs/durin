@@ -1,4 +1,13 @@
-//! This module holds traits related to the FaultDisputeGame
+//! This module holds traits related to the [FaultDisputeGame]
+
+use crate::DisputeGame;
+
+/// A [FaultDisputeGame] is a [DisputeGame] that is played over a [FaultVM] backend. This
+/// trait extends the [DisputeGame] trait with functionality that is specific to the
+/// fault [crate::dispute_game::GameType] variants.
+pub trait FaultDisputeGame<BE>: DisputeGame<BE> {
+    /* todo */
+}
 
 /// The [Position] trait defines the interface of a generalized index within a binary tree.
 /// A "Generalized Index" is calculated as `2^{depth} + index_at_depth`.
