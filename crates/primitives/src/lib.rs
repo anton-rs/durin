@@ -11,3 +11,6 @@ pub use dispute_game::{Claim, GameStatus, GameType};
 
 mod traits;
 pub use traits::{DisputeGame, DisputeSolver};
+
+#[cfg(test)]
+pub mod rule;
