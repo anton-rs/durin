@@ -17,7 +17,7 @@ pub trait FaultDisputeGame: DisputeGame {
 
 /// A [FaultClaimSolver] is a solver that finds the correct response to a given [durin_primitives::Claim]
 /// within a [FaultDisputeGame].
-pub trait FaultClaimSolver<T: AsRef<[u8]>> {
+pub trait FaultClaimSolver<T: AsRef<[u8]>, P: TraceProvider<T>> {
     /// Finds the best move against a [crate::ClaimData] in a given [FaultDisputeState].
     ///
     /// ### Takes
@@ -33,6 +33,10 @@ pub trait FaultClaimSolver<T: AsRef<[u8]>> {
         claim_index: usize,
         attacking_root: bool,
     ) -> anyhow::Result<FaultSolverResponse<T>>;
+
+    /// Returns a shared reference to the [TraceProvider] that the solver uses to fetch
+    /// the state of the VM and commitments to it.
+    fn provider(&self) -> &P;
 }
 
 /// A [TraceProvider] is a type that can provide the raw state (in bytes) at a given

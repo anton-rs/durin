@@ -1,12 +1,26 @@
 //! Implementation of the [FaultClaimSolver] trait on the [FaultDisputeSolver].
 
-use crate::{
-    FaultClaimSolver, FaultDisputeGame, FaultDisputeSolver, FaultDisputeState, FaultSolverResponse,
-    Gindex, TraceProvider,
-};
-use std::sync::Arc;
+#![allow(dead_code, unused_variables)]
 
-impl<T, P> FaultClaimSolver<T> for FaultDisputeSolver<T, P>
+use crate::{
+    ClaimData, FaultClaimSolver, FaultDisputeGame, FaultDisputeState, FaultSolverResponse, Gindex,
+    Position, TraceProvider,
+};
+use durin_primitives::Claim;
+use std::{marker::PhantomData, sync::Arc};
+
+/// The alpha claim solver is the first iteration of the Fault dispute game solver used
+/// in the alpha release of the Fault proof system on Optimism.
+struct AlphaClaimSolver<T, P>
+where
+    T: AsRef<[u8]>,
+    P: TraceProvider<T>,
+{
+    provider: P,
+    _phantom: PhantomData<T>,
+}
+
+impl<T, P> FaultClaimSolver<T, P> for AlphaClaimSolver<T, P>
 where
     T: AsRef<[u8]>,
     P: TraceProvider<T>,
@@ -115,19 +129,85 @@ where
             ))
         }
     }
+
+    fn provider(&self) -> &P {
+        &self.provider
+    }
+}
+
+impl<T, P> AlphaClaimSolver<T, P>
+where
+    T: AsRef<[u8]>,
+    P: TraceProvider<T>,
+{
+    fn new(provider: P) -> Self {
+        Self {
+            provider,
+            _phantom: PhantomData,
+        }
+    }
+
+    /// Fetches the state hash at a given position from a [TraceProvider].
+    /// If the fetch fails, the claim is marked as unvisited and the error is returned.
+    #[inline]
+    pub(crate) fn fetch_state_hash(
+        provider: &P,
+        position: Position,
+        observed_claim: &mut ClaimData,
+    ) -> anyhow::Result<Claim> {
+        let state_hash = provider.state_hash(position).map_err(|e| {
+            observed_claim.visited = false;
+            e
+        })?;
+        Ok(state_hash)
+    }
+
+    #[inline]
+    pub(crate) fn fetch_state_at(
+        provider: &P,
+        position: Position,
+        observed_claim: &mut ClaimData,
+    ) -> anyhow::Result<Arc<T>> {
+        let state_at = provider.state_at(position).map_err(|e| {
+            observed_claim.visited = false;
+            e
+        })?;
+        Ok(state_at)
+    }
+
+    #[inline]
+    pub(crate) fn fetch_proof_at(
+        provider: &P,
+        position: Position,
+        observed_claim: &mut ClaimData,
+    ) -> anyhow::Result<Arc<[u8]>> {
+        let proof_at = provider.proof_at(position).map_err(|e| {
+            observed_claim.visited = false;
+            e
+        })?;
+        Ok(proof_at)
+    }
 }
 
 // TODO: prop tests for solving claims.
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{providers::AlphabetTraceProvider, ClaimData};
+    use crate::{providers::AlphabetTraceProvider, ClaimData, FaultDisputeSolver};
     use alloy_primitives::hex;
     use durin_primitives::{Claim, DisputeSolver, GameStatus};
 
-    fn mocks() -> (FaultDisputeSolver<[u8; 1], AlphabetTraceProvider>, Claim) {
+    fn mocks() -> (
+        FaultDisputeSolver<
+            [u8; 1],
+            AlphabetTraceProvider,
+            AlphaClaimSolver<[u8; 1], AlphabetTraceProvider>,
+        >,
+        Claim,
+    ) {
         let provider = AlphabetTraceProvider::new(b'a', 4);
-        let solver = FaultDisputeSolver::new(provider);
+        let claim_solver = AlphaClaimSolver::new(provider);
+        let solver = FaultDisputeSolver::new(claim_solver);
         let root_claim = Claim::from_slice(&hex!(
             "c0ffee00c0de0000000000000000000000000000000000000000000000000000"
         ));
@@ -139,12 +219,12 @@ mod test {
         let (solver, root_claim) = mocks();
         let moves = [
             (
-                solver.provider.state_hash(1).unwrap(),
+                solver.provider().state_hash(1).unwrap(),
                 FaultSolverResponse::Skip(0),
             ),
             (
                 root_claim,
-                FaultSolverResponse::Move(true, 0, solver.provider.state_hash(2).unwrap()),
+                FaultSolverResponse::Move(true, 0, solver.provider().state_hash(2).unwrap()),
             ),
         ];
 
@@ -172,12 +252,12 @@ mod test {
         let (solver, root_claim) = mocks();
         let moves = [
             (
-                solver.provider.state_hash(4).unwrap(),
-                FaultSolverResponse::Move(false, 2, solver.provider.state_hash(10).unwrap()),
+                solver.provider().state_hash(4).unwrap(),
+                FaultSolverResponse::Move(false, 2, solver.provider().state_hash(10).unwrap()),
             ),
             (
                 root_claim,
-                FaultSolverResponse::Move(true, 2, solver.provider.state_hash(8).unwrap()),
+                FaultSolverResponse::Move(true, 2, solver.provider().state_hash(8).unwrap()),
             ),
         ];
 
@@ -194,7 +274,7 @@ mod test {
                     ClaimData {
                         parent_index: 0,
                         visited: true,
-                        value: solver.provider.state_hash(2).unwrap(),
+                        value: solver.provider().state_hash(2).unwrap(),
                         position: 2,
                         clock: 0,
                     },
@@ -241,7 +321,7 @@ mod test {
                 ClaimData {
                     parent_index: 1,
                     visited: false,
-                    value: solver.provider.state_hash(4).unwrap(),
+                    value: solver.provider().state_hash(4).unwrap(),
                     position: 4,
                     clock: 0,
                 },
@@ -262,9 +342,9 @@ mod test {
         let moves = solver.available_moves(&mut state).unwrap();
         assert_eq!(
             &[
-                FaultSolverResponse::Move(true, 0, solver.provider.state_hash(2).unwrap()),
+                FaultSolverResponse::Move(true, 0, solver.provider().state_hash(2).unwrap()),
                 FaultSolverResponse::Skip(1),
-                FaultSolverResponse::Move(false, 2, solver.provider.state_hash(10).unwrap()),
+                FaultSolverResponse::Move(false, 2, solver.provider().state_hash(10).unwrap()),
                 FaultSolverResponse::Skip(3)
             ],
             moves.as_ref()
@@ -300,7 +380,7 @@ mod test {
                     ClaimData {
                         parent_index: 0,
                         visited: true,
-                        value: solver.provider.state_hash(2).unwrap(),
+                        value: solver.provider().state_hash(2).unwrap(),
                         position: 2,
                         clock: 0,
                     },
@@ -316,7 +396,7 @@ mod test {
                     ClaimData {
                         parent_index: 2,
                         visited: true,
-                        value: solver.provider.state_hash(8).unwrap(),
+                        value: solver.provider().state_hash(8).unwrap(),
                         position: 8,
                         clock: 0,
                     },
@@ -327,7 +407,7 @@ mod test {
                         value: if wrong_leaf {
                             root_claim
                         } else {
-                            solver.provider.state_hash(16).unwrap()
+                            solver.provider().state_hash(16).unwrap()
                         },
                         position: 16,
                         clock: 0,
