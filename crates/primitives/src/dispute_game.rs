@@ -6,6 +6,7 @@ use std::convert::TryFrom;
 pub type Claim = B256;
 
 /// The [GameType] enum is used to indicate which type of dispute game is being played.
+#[derive(Debug, Clone)]
 pub enum GameType {
     /// The [GameType::FaultCannon] variant is used to indicate that the dispute game is being
     /// played over a FaultDisputeGame with the Cannon VM as its backend source of truth.
@@ -29,6 +30,7 @@ impl TryFrom<u8> for GameType {
 }
 
 /// The [GameStatus] enum is used to indicate the status of a dispute game.
+#[derive(Debug, Clone)]
 pub enum GameStatus {
     /// The [GameStatus::InProgress] variant is used to indicate that the dispute game is
     /// still in progress.

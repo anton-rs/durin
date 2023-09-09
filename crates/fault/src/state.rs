@@ -7,6 +7,7 @@ use durin_primitives::{Claim, DisputeGame, GameStatus};
 
 /// The [ClaimData] struct holds the data associated with a claim within a
 /// [crate::FaultDisputeGame]'s state on-chain.
+#[derive(Debug, Clone, Copy)]
 pub struct ClaimData {
     parent_index: u32,
     countered: bool,
@@ -18,6 +19,7 @@ pub struct ClaimData {
 /// the [FaultDisputeState] struct holds the in-memory representation of a
 /// [crate::FaultDisputeGame]'s state as well as its root claim and
 /// local status.
+#[derive(Debug, Clone)]
 pub struct FaultDisputeState {
     /// The [FaultDisputeState] is modeled as a directed acyclical graph (DAG) of
     /// [ClaimData] structs pointing to their parents, all the way up to the root
