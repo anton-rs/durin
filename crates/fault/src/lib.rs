@@ -3,8 +3,10 @@
 extern crate durin_primitives;
 
 mod position;
+mod response;
+mod state;
 mod traits;
 
 pub mod prelude {
-    pub use super::{position::*, traits::*};
+    pub use super::{position::*, response::*, traits::*};
 }

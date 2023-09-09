@@ -1,12 +1,28 @@
 //! This module holds traits related to the [FaultDisputeGame]
 
-use durin_primitives::DisputeGame;
+use crate::{
+    prelude::FaultSolverResponse,
+    state::{ClaimData, FaultDisputeState},
+};
+use durin_primitives::{Claim, DisputeGame, DisputeSolver};
 
 /// A [FaultDisputeGame] is a [DisputeGame] that is played over a [FaultVM] backend. This
 /// trait extends the [DisputeGame] trait with functionality that is specific to the
 /// fault [crate::dispute_game::GameType] variants.
-pub trait FaultDisputeGame: DisputeGame {
-    /* todo */
+pub trait FaultDisputeGame<P: Position>: DisputeGame {
+    /// Performs an move against the given [ClaimData].
+    fn do_move(&mut self, claim: ClaimData<P>, is_attack: bool) -> anyhow::Result<()>;
+
+    /// Step against the given [ClaimData].
+    fn step(&mut self, claim: ClaimData<P>, is_attack: bool) -> anyhow::Result<()>;
+}
+
+pub trait FaultDisputeSolver: DisputeSolver<FaultSolverResponse, FaultDisputeState<u128>> {
+    /// Returns the raw state (in bytes) at the given position.
+    fn trace_at(&self, position: u128) -> anyhow::Result<Vec<u8>>;
+
+    /// Returns the state hash (in bytes) at the given position.
+    fn state_hash(&self, position: u128) -> anyhow::Result<Claim>;
 }
 
 /// The [Position] trait defines the interface of a generalized index within a binary tree.

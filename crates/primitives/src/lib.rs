@@ -8,7 +8,7 @@ mod dispute_game;
 pub use dispute_game::{Claim, GameStatus, GameType};
 
 mod traits;
-pub use traits::{DisputeAgent, DisputeGame};
+pub use traits::{DisputeGame, DisputeSolver};
 
 // Re-export alloy primitives
 pub use alloy_primitives::*;

@@ -1,27 +1,22 @@
 //! The traits module contains traits used throughout the library.
 
-use crate::{
-    dispute_game::{Claim, GameType},
-    GameStatus,
-};
-use alloy_primitives::Bytes;
+use crate::{dispute_game::Claim, GameStatus};
 
 /// The [DisputeGame] trait is the highest level trait in the library, describing
-/// a simple primitive dispute. It has several key properties:
+/// the state of a simple primitive dispute. It has several key properties:
 ///
 /// - It houses a root [Claim], a 32 byte commitment, which is the claim being
 ///   disputed.
-/// - It has a [GameType], which indicates the type of dispute game being played.
-/// - It has a [GameStatus], which indicates the current status of the dispute.
+/// - It can exist in one of three states, as indicated by the [GameStatus] enum.
+///     1. [GameStatus::InProgress] - The dispute game is still in progress.
+///     2. [GameStatus::ChallengerWins] - The challenger of the root claim has won
+///        the dispute game.
+///     3. [GameStatus::DefenderWins] - The defender of the root claim has won the
+///        dispute game.
 /// - It has a method to resolve the dispute, which returns the [GameStatus]
 ///   after resolution. The resolution mechanism can be anything - a fault proof,
 ///   a validity proof, a multisig, etc. It is up to the implementation of the
 ///   dispute game to determine the resolution mechanism.
-///
-/// TODO: This trait should be generic over the backend that the game is being played on,
-///       i.e. onchain vs. local vs. arbiter, etc. We'll need another trait that describes
-///       the generic interaction with the backend for a [DisputeGame], and another for
-///       a [crate::FaultDisputeGame].
 pub trait DisputeGame {
     /// Returns the root claim of the dispute game. The root claim is a 32 byte
     /// commitment to what is being disputed.
@@ -30,29 +25,18 @@ pub trait DisputeGame {
     /// a 32 byte commitment.
     fn root_claim(&self) -> Claim;
 
-    /// Returns the type of the dispute game being played.
-    fn game_type(&self) -> GameType;
-
     /// Returns the current status of the dispute game.
-    fn status(&self) -> GameStatus;
-
-    /// Returns the UNIX timestamp of the creation of the dispute game on-chain.
-    fn created_at(&self) -> u64;
-
-    /// Returns the extra data passed to the [DisputeGame] by its creator. This
-    /// data is generic and it is up to the implementation of the game to
-    /// determine its decoding.
-    fn extra_data(&self) -> Bytes;
+    fn status(&self) -> &GameStatus;
 
     /// Resolves the dispute game, returning the [GameStatus] after resolution.
-    fn resolve(&self) -> GameStatus;
+    fn resolve(&mut self) -> &GameStatus;
 }
 
-/// The [DisputeAgent] trait describes the base functionality of a dispute agent
-/// for any given [DisputeGame]. It serves as the highest level agent trait, and
-/// only enforces functionality that is common to all dispute agents.
-///
-/// All other agent traits should be subtraits of the [DisputeAgent].
-pub trait DisputeAgent<DG: DisputeGame> {
-    /* todo */
+/// The [DisputeSolver] trait describes the base functionality of a solver for
+/// a [DisputeGame].
+pub trait DisputeSolver<R, DG: DisputeGame> {
+    /// Returns the response of the solver provided a [DisputeGame] and a
+    /// [Claim] within it. The consumer of the response is responsible for
+    /// dispatching the action associated with it.
+    fn respond(&self, game: &DG, claim: Claim) -> R;
 }
