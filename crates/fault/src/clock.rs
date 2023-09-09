@@ -1,14 +1,8 @@
 //! The position module holds the [Clock] type.
 
+use crate::ChessClock;
+
 pub type Clock = u128;
-
-pub trait ChessClock {
-    /// Returns the seconds elapsed on the chess clock in seconds.
-    fn duration(&self) -> u64;
-
-    /// Returns the timestamp of when the chess clock was last stopped.
-    fn timestamp(&self) -> u64;
-}
 
 impl ChessClock for Clock {
     fn duration(&self) -> u64 {

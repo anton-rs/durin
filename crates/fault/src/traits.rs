@@ -2,14 +2,14 @@
 
 use crate::{
     position::Position,
-    prelude::FaultSolverResponse,
     state::{ClaimData, FaultDisputeState},
+    FaultSolverResponse,
 };
 use durin_primitives::{Claim, DisputeGame, DisputeSolver};
 
-/// A [FaultDisputeGame] is a [DisputeGame] that is played over a [FaultVM] backend. This
+/// A [FaultDisputeGame] is a [DisputeGame] that is played over a FaultVM backend. This
 /// trait extends the [DisputeGame] trait with functionality that is specific to the
-/// fault [crate::dispute_game::GameType] variants.
+/// fault [durin_primitives::GameType] variants.
 pub trait FaultDisputeGame: DisputeGame {
     /// Returns a shared reference to the raw state of the game DAG.
     fn state(&self) -> &Vec<ClaimData>;
@@ -69,4 +69,15 @@ pub trait Gindex {
 
     /// Returns the relative [Position] for an attack or defense move against the current [Position].
     fn make_move(&self, is_attack: bool) -> Self;
+}
+
+/// The [ChessClock] trait defines the interface of a single side of a chess clock
+/// at a given state in time.
+pub trait ChessClock {
+    /// Returns the seconds elapsed on the chess clock in seconds when it was
+    /// last stopped.
+    fn duration(&self) -> u64;
+
+    /// Returns the timestamp of when the chess clock was last stopped.
+    fn timestamp(&self) -> u64;
 }

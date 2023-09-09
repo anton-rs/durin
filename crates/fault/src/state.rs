@@ -1,13 +1,12 @@
-//! This module contains the in-memory represtentation of a
-//! [crate::prelude::FaultDisputeGame]'s state
+//! This module contains the in-memory represtentation of a [crate::FaultDisputeGame]'s state
 
 #![allow(dead_code, unused_variables)]
 
-use crate::prelude::{Clock, FaultDisputeGame, Position};
+use crate::{Clock, FaultDisputeGame, Position};
 use durin_primitives::{Claim, DisputeGame, GameStatus};
 
 /// The [ClaimData] struct holds the data associated with a claim within a
-/// [crate::prelude::FaultDisputeGame]'s state on-chain.
+/// [crate::FaultDisputeGame]'s state on-chain.
 pub struct ClaimData {
     parent_index: u32,
     countered: bool,
@@ -17,7 +16,7 @@ pub struct ClaimData {
 }
 
 /// the [FaultDisputeState] struct holds the in-memory representation of a
-/// [crate::prelude::FaultDisputeGame]'s state as well as its root claim and
+/// [crate::FaultDisputeGame]'s state as well as its root claim and
 /// local status.
 pub struct FaultDisputeState {
     /// The [FaultDisputeState] is modeled as a directed acyclical graph (DAG) of

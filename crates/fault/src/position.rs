@@ -1,7 +1,7 @@
 //! The position module holds the [Position] type and the implementation of the [Gindex]
 //! trait on it.
 
-use crate::prelude::Gindex;
+use crate::Gindex;
 
 pub type Position = u128;
 

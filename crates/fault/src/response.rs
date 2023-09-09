@@ -1,4 +1,4 @@
-//! Holds the response type for a [crate::prelude::FaultDisputeGame]
+//! Holds the response type for a [crate::FaultDisputeGame]
 
 /// The [FaultSolverResponse] enum describes the response that a solver should
 /// return when asked to make a move.

@@ -3,15 +3,21 @@
 extern crate durin_primitives;
 
 mod clock;
+pub use clock::Clock;
+
 mod position;
+pub use position::{compute_gindex, Position};
+
 mod providers;
+
 mod response;
-mod solver;
+pub use response::FaultSolverResponse;
+
 mod state;
+pub use state::{ClaimData, FaultDisputeState};
+
 mod traits;
+pub use traits::*;
 
+mod solver;
 pub use solver::*;
-
-pub mod prelude {
-    pub use super::{clock::*, position::*, providers::*, response::*, traits::*};
-}
