@@ -188,6 +188,7 @@ dependencies = [
  "alloy-sol-types",
  "anyhow",
  "durin-primitives",
+ "proptest",
 ]
 
 [[package]]

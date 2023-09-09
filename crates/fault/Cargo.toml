@@ -13,3 +13,6 @@ durin-primitives = { path = "../primitives" }
 alloy-primitives = { git = "https://github.com/alloy-rs/core.git" }
 alloy-sol-types = { git = "https://github.com/alloy-rs/core.git" }
 anyhow = "1.0.75"
+
+[dev-dependencies]
+proptest = "1.2.0"

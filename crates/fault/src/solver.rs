@@ -9,6 +9,9 @@ use crate::{
 use durin_primitives::{DisputeGame, DisputeSolver};
 use std::marker::PhantomData;
 
+#[cfg(test)]
+use proptest::prelude::*;
+
 /// A [FaultDisputeSolver] is a [DisputeSolver] that is played over a fault proof VM backend. The
 /// solver is responsible for honestly responding to any given [ClaimData] in a given
 /// [FaultDisputeState]. It uses a [TraceProvider] to fetch the absolute prestate of the VM as
@@ -33,7 +36,7 @@ where
     ) -> anyhow::Result<Vec<FaultSolverResponse>> {
         // Fetch the local opinion on the root claim.
         let attacking_root =
-            { self.provider.state_hash(Self::ROOT_CLAIM_POSITION)? != game.root_claim() };
+            self.provider.state_hash(Self::ROOT_CLAIM_POSITION)? != game.root_claim();
 
         game.state()
             .iter()
@@ -64,5 +67,14 @@ where
         let agree_with_level = claim.position.depth() % 2 == attacking_root as u8;
 
         todo!()
+    }
+}
+
+// TODO: prop tests for solving claims.
+#[cfg(test)]
+proptest! {
+    #[test]
+    fn test_solve(s in any::<u8>()) {
+        assert!(s <= u8::MAX);
     }
 }
