@@ -1,7 +1,11 @@
 //! This module contains the [Rule] type as well as several helper macros for applying
 //! rules on top of one another.
+//!
+//! [Rule]s are functions that take a state, run validation for an invariant, and return
+//! the state back if successful or an error if not. They are used to validate state
+//! transitions in tests where the various solvers in durin suggest a state transition.
 
-type Rule<T> = Box<dyn Fn(T) -> anyhow::Result<T>>;
+pub type Rule<T> = Box<dyn Fn(T) -> anyhow::Result<T>>;
 
 #[macro_export]
 macro_rules! chain_rules {
@@ -19,6 +23,7 @@ macro_rules! chain_rules {
     }};
 }
 
+#[cfg(test)]
 mod test {
     use super::*;
 

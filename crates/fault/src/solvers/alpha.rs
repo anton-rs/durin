@@ -189,6 +189,26 @@ where
     }
 }
 
+/// The rules module contains implementations of the [Rule] type for the
+/// alpha solver.
+///
+/// These rules define the conditions of the game state that must be met before
+/// and after state transitions and are used to test the validity of the solving
+/// algorithm with various resolution methods.
+pub mod rules {
+    use crate::FaultDisputeState;
+    use durin_primitives::rule::Rule;
+    use std::sync::Arc;
+
+    fn pre_move_rules() -> &'static [Rule<Arc<FaultDisputeState>>] {
+        &[]
+    }
+
+    fn post_move_rules() -> &'static [Rule<Arc<FaultDisputeState>>] {
+        &[]
+    }
+}
+
 // TODO: prop tests for solving claims.
 #[cfg(test)]
 mod test {
