@@ -64,7 +64,15 @@ where
         }
     }
 
-    #[inline]
+    /// Finds the best move against a [crate::ClaimData] in a given [FaultDisputeState].
+    ///
+    /// ### Takes
+    /// - `world`: The [FaultDisputeState] to solve against.
+    /// - `claim_index`: The index of the claim within the state DAG.
+    /// - `attacking_root`: A boolean indicating whether or not the solver is attacking the root.
+    ///
+    /// ### Returns
+    /// - [FaultSolverResponse] or [Err]: The best move against the claim.
     fn solve_claim(
         &self,
         world: &mut FaultDisputeState,
@@ -102,6 +110,10 @@ where
             claim.visited = false;
             e
         })?;
+
+        // TODO(clabby): Consider that because we'll have to search for the pre/post state for the
+        // step instruction, we may also need to know if all claims at agreed levels are correct in
+        // the path up to the root claim.
 
         let move_direction = if self_state_hash == claim.value {
             // If the local opinion of the state hash at the claim's position is the same as the
