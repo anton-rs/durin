@@ -7,18 +7,10 @@ use alloy_sol_types::{sol, SolType};
 use durin_primitives::Claim;
 use std::convert::TryInto;
 
-sol! {
-    struct AlphabetPrestate {
-        uint8 letter;
-    }
+type AlphabetClaimConstruction = sol! { tuple(uint256, uint256) };
 
-    struct AlphabetEncoding {
-        uint256 instruction;
-        uint256 claim;
-    }
-}
-
-/// The [AlphabetTraceProvider] is a [TraceProvider] that provides the
+/// The [AlphabetTraceProvider] is a [TraceProvider] that provides the correct
+/// trace for the mock Alphabet VM.
 pub struct AlphabetTraceProvider {
     /// The absolute prestate of the alphabet VM is the setup state.
     /// This will be the ascii representation of letter prior to the first
@@ -34,10 +26,8 @@ impl TraceProvider<u8> for AlphabetTraceProvider {
     }
 
     fn absolute_prestate_hash(&self) -> Claim {
-        let prestate_sol = AlphabetPrestate {
-            letter: self.absolute_prestate,
-        };
-        let mut prestate_hash = keccak256(AlphabetPrestate::encode(&prestate_sol));
+        let prestate = U256::from(self.absolute_prestate);
+        let mut prestate_hash = keccak256(<sol!(uint256)>::encode_single(&prestate));
         prestate_hash[0] = VMStatus::Unfinished as u8;
         prestate_hash
     }
@@ -52,11 +42,11 @@ impl TraceProvider<u8> for AlphabetTraceProvider {
     }
 
     fn state_hash(&self, position: Position) -> anyhow::Result<Claim> {
-        let state_sol = AlphabetEncoding {
-            instruction: U256::from(position.trace_index(self.max_depth)),
-            claim: U256::from(self.trace_at(position)?),
-        };
-        let mut state_hash = keccak256(AlphabetEncoding::encode(&state_sol));
+        let state_sol = (
+            U256::from(position.trace_index(self.max_depth)),
+            U256::from(self.trace_at(position)?),
+        );
+        let mut state_hash = keccak256(AlphabetClaimConstruction::encode(&state_sol));
         state_hash[0] = VMStatus::Invalid as u8;
         Ok(state_hash)
     }
@@ -75,10 +65,8 @@ mod test {
             max_depth: 4,
         };
 
-        let prestate_sol = &AlphabetPrestate {
-            letter: *provider.absolute_prestate(),
-        };
-        let prestate = AlphabetPrestate::encode(prestate_sol);
+        let prestate_sol = U256::from(*provider.absolute_prestate());
+        let prestate = <sol!(uint256)>::encode_single(&prestate_sol);
         assert_eq!(
             hex!("0000000000000000000000000000000000000000000000000000000000000061"),
             prestate.as_slice()
@@ -103,11 +91,8 @@ mod test {
             let expected = b'a' + i + 1;
             let position = compute_gindex(provider.max_depth, i as u64);
 
-            let expected_encoded = &AlphabetEncoding {
-                instruction: U256::from(i),
-                claim: U256::from(expected),
-            };
-            let mut expected_hash = keccak256(AlphabetEncoding::encode(expected_encoded));
+            let expected_encoded = (U256::from(i), U256::from(expected));
+            let mut expected_hash = keccak256(AlphabetClaimConstruction::encode(&expected_encoded));
             expected_hash[0] = VMStatus::Invalid as u8;
 
             assert_eq!(provider.trace_at(position).unwrap(), expected);
