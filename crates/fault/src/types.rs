@@ -8,6 +8,7 @@ pub type Clock = u128;
 
 /// The [FaultSolverResponse] enum describes the response that a solver should
 /// return when asked to make a move.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FaultSolverResponse {
     /// A response indicating that the proper move is to attack the given claim.
     Attack,
@@ -15,6 +16,9 @@ pub enum FaultSolverResponse {
     Defend,
     /// A response indicating that the proper move is to skip the given claim.
     Skip,
+    /// A response indicating that the proper move is to perform a VM step against
+    /// the given claim.
+    Step(Box<FaultSolverResponse>),
 }
 
 /// The [VMStatus] enum describes the status of a VM at a given position.
@@ -22,6 +26,7 @@ pub enum FaultSolverResponse {
 /// - [VMStatus::Invalid]: The VM is exited with an invalid status.
 /// - [VMStatus::Panic]: The VM is exited with a panic status.
 /// - [VMStatus::Unfinished]: The VM is not yet exited.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum VMStatus {
     Valid = 0,
     Invalid = 1,

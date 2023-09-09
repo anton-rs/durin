@@ -1,6 +1,8 @@
 //! This module contains the implementation of the [crate::TraceProvider] trait for the
 //! mock Alphabet VM.
 
+#![allow(dead_code, unused_variables)]
+
 use crate::{Gindex, Position, TraceProvider, VMStatus};
 use alloy_primitives::{keccak256, U256};
 use alloy_sol_types::{sol, SolType};
@@ -18,6 +20,15 @@ pub struct AlphabetTraceProvider {
     pub absolute_prestate: u8,
     /// The maximum depth of the dispute game position tree.
     pub max_depth: u8,
+}
+
+impl AlphabetTraceProvider {
+    pub fn new(absolute_prestate: u8, max_depth: u8) -> Self {
+        Self {
+            absolute_prestate,
+            max_depth,
+        }
+    }
 }
 
 impl TraceProvider<[u8; 1]> for AlphabetTraceProvider {
