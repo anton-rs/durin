@@ -20,3 +20,6 @@ pub use traits::*;
 
 mod solver;
 pub use solver::*;
+
+mod solvers;
+pub use solvers::*;

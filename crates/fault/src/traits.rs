@@ -1,6 +1,6 @@
 //! This module holds traits related to the [FaultDisputeGame]
 
-use crate::{state::ClaimData, Position};
+use crate::{state::ClaimData, FaultDisputeState, FaultSolverResponse, Position};
 use durin_primitives::{Claim, DisputeGame};
 use std::sync::Arc;
 
@@ -13,6 +13,26 @@ pub trait FaultDisputeGame: DisputeGame {
 
     /// Returns a mutable reference to the raw state of the game DAG.
     fn state_mut(&mut self) -> &mut Vec<ClaimData>;
+}
+
+/// A [FaultClaimSolver] is a solver that finds the correct response to a given [durin_primitives::Claim]
+/// within a [FaultDisputeGame].
+pub trait FaultClaimSolver<T: AsRef<[u8]>> {
+    /// Finds the best move against a [crate::ClaimData] in a given [FaultDisputeState].
+    ///
+    /// ### Takes
+    /// - `world`: The [FaultDisputeState] to solve against.
+    /// - `claim_index`: The index of the claim within the state DAG.
+    /// - `attacking_root`: A boolean indicating whether or not the solver is attacking the root.
+    ///
+    /// ### Returns
+    /// - [FaultSolverResponse] or [Err]: The best move against the claim.
+    fn solve_claim(
+        &self,
+        world: &mut FaultDisputeState,
+        claim_index: usize,
+        attacking_root: bool,
+    ) -> anyhow::Result<FaultSolverResponse<T>>;
 }
 
 /// A [TraceProvider] is a type that can provide the raw state (in bytes) at a given

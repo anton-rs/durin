@@ -1,10 +1,9 @@
 //! The position module holds the types specific to the [crate::FaultDisputeGame] solver.
 
-use std::sync::Arc;
-
 use crate::ChessClock;
 use crate::Gindex;
 use durin_primitives::Claim;
+use std::sync::Arc;
 
 pub type Position = u128;
 pub type Clock = u128;
