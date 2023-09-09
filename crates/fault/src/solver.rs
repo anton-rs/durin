@@ -7,7 +7,7 @@ use crate::{
     TraceProvider,
 };
 use durin_primitives::{Claim, DisputeGame, DisputeSolver};
-use std::marker::PhantomData;
+use std::{marker::PhantomData, sync::Arc};
 
 /// A [FaultDisputeSolver] is a [DisputeSolver] that is played over a fault proof VM backend. The
 /// solver is responsible for honestly responding to any given [ClaimData] in a given
@@ -22,7 +22,7 @@ where
     _phantom: PhantomData<T>,
 }
 
-impl<T, P> DisputeSolver<FaultDisputeState, FaultSolverResponse> for FaultDisputeSolver<T, P>
+impl<T, P> DisputeSolver<FaultDisputeState, FaultSolverResponse<T>> for FaultDisputeSolver<T, P>
 where
     T: AsRef<[u8]>,
     P: TraceProvider<T>,
@@ -30,7 +30,7 @@ where
     fn available_moves(
         &self,
         game: &mut FaultDisputeState,
-    ) -> anyhow::Result<Vec<FaultSolverResponse>> {
+    ) -> anyhow::Result<Arc<[FaultSolverResponse<T>]>> {
         // Fetch the local opinion on the root claim.
         let attacking_root =
             self.provider.state_hash(Self::ROOT_CLAIM_POSITION)? != game.root_claim();
@@ -79,7 +79,7 @@ where
         world: &mut FaultDisputeState,
         claim_index: usize,
         attacking_root: bool,
-    ) -> anyhow::Result<FaultSolverResponse> {
+    ) -> anyhow::Result<FaultSolverResponse<T>> {
         // Fetch the maximum depth of the game's position tree.
         let max_depth = world.max_depth;
 
@@ -122,11 +122,37 @@ where
 
         // If the next move will be at the max depth of the game, then the proper move is to
         // perform a VM step against the claim. Otherwise, move in the appropriate direction.
-        //
-        // TODO(clabby): Return the data necessary for the inputs to the contract calls in the
-        // `FaultSolverResponse` variants.
-        if claim_depth == max_depth - 1 {
-            Ok(FaultSolverResponse::Step(is_attack))
+        if claim_depth == max_depth {
+            // There is a special case when we are attacking the first leaf claim at the max
+            // level where we have to provide the absolute prestate. Otherwise, we can derive
+            // the prestate position based off of `is_attack` and the incorrect claim's
+            // position.
+            let (pre_state, proof) = if claim.position.index_at_depth() == 0 && is_attack {
+                let pre_state = self.provider.absolute_prestate();
+                // TODO(clabby): There may be a proof for the absolute prestate in Cannon.
+                let proof: Arc<[u8]> = Arc::new([]);
+
+                (pre_state, proof)
+            } else {
+                // If the move is an attack, the pre-state is left of the attacked claim's
+                // position. If the move is a defense, the pre-state for the step is at the
+                // claim's position.
+                //
+                // SAFETY: We can subtract 1 here due to the above check - we will never
+                // underflow the level.
+                let pre_state_pos = claim.position - is_attack as u128;
+
+                let pre_state = Self::fetch_state_at(&self.provider, pre_state_pos, claim)?;
+                let proof = Self::fetch_proof_at(&self.provider, pre_state_pos, claim)?;
+                (pre_state, proof)
+            };
+
+            Ok(FaultSolverResponse::Step(
+                is_attack,
+                claim_index,
+                pre_state,
+                proof,
+            ))
         } else {
             // Fetch the local trace provider's opinion of the state hash at the move's position.
             let claim_hash =
@@ -157,6 +183,32 @@ where
             e
         })?;
         Ok(state_hash)
+    }
+
+    #[inline]
+    fn fetch_state_at(
+        provider: &P,
+        position: Position,
+        observed_claim: &mut ClaimData,
+    ) -> anyhow::Result<Arc<T>> {
+        let state_at = provider.state_at(position).map_err(|e| {
+            observed_claim.visited = false;
+            e
+        })?;
+        Ok(state_at)
+    }
+
+    #[inline]
+    fn fetch_proof_at(
+        provider: &P,
+        position: Position,
+        observed_claim: &mut ClaimData,
+    ) -> anyhow::Result<Arc<[u8]>> {
+        let proof_at = provider.proof_at(position).map_err(|e| {
+            observed_claim.visited = false;
+            e
+        })?;
+        Ok(proof_at)
     }
 }
 
@@ -206,7 +258,7 @@ mod test {
             );
 
             let moves = solver.available_moves(&mut state).unwrap();
-            assert_eq!(&[expected_move], moves.as_slice());
+            assert_eq!(&[expected_move], moves.as_ref());
         }
     }
 
@@ -255,7 +307,7 @@ mod test {
             );
 
             let moves = solver.available_moves(&mut state).unwrap();
-            assert_eq!(&[expected_move], moves.as_slice());
+            assert_eq!(&[expected_move], moves.as_ref());
         }
     }
 
@@ -310,7 +362,79 @@ mod test {
                 FaultSolverResponse::Move(false, 2, solver.provider.state_hash(10).unwrap()),
                 FaultSolverResponse::Skip(3)
             ],
-            moves.as_slice()
+            moves.as_ref()
         );
+    }
+
+    #[test]
+    fn available_moves_static_step() {
+        let (solver, root_claim) = mocks();
+        let cases = [
+            (
+                FaultSolverResponse::Step(true, 4, Arc::new([b'a']), Arc::new([])),
+                true,
+            ),
+            (
+                FaultSolverResponse::Step(false, 4, Arc::new([b'b']), Arc::new([])),
+                false,
+            ),
+        ];
+
+        for (expected_response, wrong_leaf) in cases {
+            let mut state = FaultDisputeState::new(
+                vec![
+                    // Invalid root claim - ATTACK
+                    ClaimData {
+                        parent_index: u32::MAX,
+                        visited: true,
+                        value: root_claim,
+                        position: 1,
+                        clock: 0,
+                    },
+                    // Honest Attack
+                    ClaimData {
+                        parent_index: 0,
+                        visited: true,
+                        value: solver.provider.state_hash(2).unwrap(),
+                        position: 2,
+                        clock: 0,
+                    },
+                    // Wrong level; Wrong claim - ATTACK
+                    ClaimData {
+                        parent_index: 1,
+                        visited: true,
+                        value: root_claim,
+                        position: 4,
+                        clock: 0,
+                    },
+                    // Honest Attack
+                    ClaimData {
+                        parent_index: 2,
+                        visited: true,
+                        value: solver.provider.state_hash(8).unwrap(),
+                        position: 8,
+                        clock: 0,
+                    },
+                    // Wrong level; Wrong claim - ATTACK STEP
+                    ClaimData {
+                        parent_index: 3,
+                        visited: false,
+                        value: if wrong_leaf {
+                            root_claim
+                        } else {
+                            solver.provider.state_hash(16).unwrap()
+                        },
+                        position: 16,
+                        clock: 0,
+                    },
+                ],
+                root_claim,
+                GameStatus::InProgress,
+                4,
+            );
+
+            let moves = solver.available_moves(&mut state).unwrap();
+            assert_eq!(&[expected_response], moves.as_ref());
+        }
     }
 }

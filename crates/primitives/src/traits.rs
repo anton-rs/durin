@@ -1,6 +1,7 @@
 //! The traits module contains traits used throughout the library.
 
 use crate::{dispute_game::Claim, GameStatus};
+use std::sync::Arc;
 
 /// The [DisputeGame] trait is the highest level trait in the library, describing
 /// the state of a simple primitive dispute. It has several key properties:
@@ -38,5 +39,5 @@ pub trait DisputeSolver<DG: DisputeGame, R> {
     /// Returns any available responses computed by the solver provided a [DisputeGame].
     /// The consumer of the response is responsible for dispatching the action associated
     /// with the responses.
-    fn available_moves(&self, game: &mut DG) -> anyhow::Result<Vec<R>>;
+    fn available_moves(&self, game: &mut DG) -> anyhow::Result<Arc<[R]>>;
 }

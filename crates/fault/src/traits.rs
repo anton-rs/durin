@@ -2,6 +2,7 @@
 
 use crate::{state::ClaimData, Position};
 use durin_primitives::{Claim, DisputeGame};
+use std::sync::Arc;
 
 /// A [FaultDisputeGame] is a [DisputeGame] that is played over a FaultVM backend. This
 /// trait extends the [DisputeGame] trait with functionality that is specific to the
@@ -18,16 +19,19 @@ pub trait FaultDisputeGame: DisputeGame {
 /// [Position] within a [FaultDisputeGame].
 pub trait TraceProvider<P: AsRef<[u8]>> {
     /// Returns the raw absolute prestate (in bytes).
-    fn absolute_prestate(&self) -> P;
+    fn absolute_prestate(&self) -> Arc<P>;
 
     /// Returns the absolute prestate hash.
     fn absolute_prestate_hash(&self) -> Claim;
 
     /// Returns the raw state (in bytes) at the given position.
-    fn state_at(&self, position: Position) -> anyhow::Result<P>;
+    fn state_at(&self, position: Position) -> anyhow::Result<Arc<P>>;
 
     /// Returns the state hash at the given position.
     fn state_hash(&self, position: Position) -> anyhow::Result<Claim>;
+
+    /// Returns the raw proof for the commitment at the given position.
+    fn proof_at(&self, position: Position) -> anyhow::Result<Arc<[u8]>>;
 }
 
 /// The [Gindex] trait defines the interface of a generalized index within a binary tree.

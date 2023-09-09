@@ -7,7 +7,7 @@ use crate::{Gindex, Position, TraceProvider, VMStatus};
 use alloy_primitives::{keccak256, U256};
 use alloy_sol_types::{sol, SolType};
 use durin_primitives::Claim;
-use std::convert::TryInto;
+use std::{convert::TryInto, sync::Arc};
 
 type AlphabetClaimConstruction = sol! { tuple(uint256, uint256) };
 
@@ -32,8 +32,8 @@ impl AlphabetTraceProvider {
 }
 
 impl TraceProvider<[u8; 1]> for AlphabetTraceProvider {
-    fn absolute_prestate(&self) -> [u8; 1] {
-        [self.absolute_prestate]
+    fn absolute_prestate(&self) -> Arc<[u8; 1]> {
+        Arc::new([self.absolute_prestate])
     }
 
     fn absolute_prestate_hash(&self) -> Claim {
@@ -43,14 +43,14 @@ impl TraceProvider<[u8; 1]> for AlphabetTraceProvider {
         prestate_hash
     }
 
-    fn state_at(&self, position: Position) -> anyhow::Result<[u8; 1]> {
+    fn state_at(&self, position: Position) -> anyhow::Result<Arc<[u8; 1]>> {
         let absolute_prestate = self.absolute_prestate as u64;
         let trace_index = position.trace_index(self.max_depth);
 
         let state = (absolute_prestate + trace_index + 1)
             .try_into()
             .unwrap_or(self.absolute_prestate + 2u8.pow(self.max_depth as u32));
-        Ok([state])
+        Ok(Arc::new([state]))
     }
 
     fn state_hash(&self, position: Position) -> anyhow::Result<Claim> {
@@ -61,6 +61,10 @@ impl TraceProvider<[u8; 1]> for AlphabetTraceProvider {
         let mut state_hash = keccak256(AlphabetClaimConstruction::encode(&state_sol));
         state_hash[0] = VMStatus::Invalid as u8;
         Ok(state_hash)
+    }
+
+    fn proof_at(&self, position: Position) -> anyhow::Result<Arc<[u8]>> {
+        Ok(Arc::new([]))
     }
 }
 

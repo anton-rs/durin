@@ -1,5 +1,7 @@
 //! The position module holds the types specific to the [crate::FaultDisputeGame] solver.
 
+use std::sync::Arc;
+
 use crate::ChessClock;
 use crate::Gindex;
 use durin_primitives::Claim;
@@ -10,14 +12,14 @@ pub type Clock = u128;
 /// The [FaultSolverResponse] enum describes the response that a solver should
 /// return when asked to make a move.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum FaultSolverResponse {
+pub enum FaultSolverResponse<T: AsRef<[u8]>> {
     /// A response indicating that the proper move is to attack or defend the given claim.
     Move(bool, usize, Claim),
     /// A response indicating that the proper move is to skip the given claim.
     Skip(usize),
     /// A response indicating that the proper move is to perform a VM step against
     /// the given claim.
-    Step(bool),
+    Step(bool, usize, Arc<T>, Arc<[u8]>),
 }
 
 /// The [VMStatus] enum describes the status of a VM at a given position.
