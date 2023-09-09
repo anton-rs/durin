@@ -3,9 +3,10 @@
 #![allow(dead_code, unused_variables)]
 
 use crate::{
-    FaultDisputeGame, FaultDisputeState, FaultSolverResponse, Gindex, Position, TraceProvider,
+    ClaimData, FaultDisputeGame, FaultDisputeState, FaultSolverResponse, Gindex, Position,
+    TraceProvider,
 };
-use durin_primitives::{DisputeGame, DisputeSolver};
+use durin_primitives::{Claim, DisputeGame, DisputeSolver};
 use std::marker::PhantomData;
 
 /// A [FaultDisputeSolver] is a [DisputeSolver] that is played over a fault proof VM backend. The
@@ -79,6 +80,10 @@ where
         claim_index: usize,
         attacking_root: bool,
     ) -> anyhow::Result<FaultSolverResponse> {
+        // Fetch the maximum depth of the game's position tree.
+        let max_depth = world.max_depth;
+
+        // Fetch the ClaimData and its position's depth from the world state DAG.
         let claim = world
             .state_mut()
             .get_mut(claim_index)
@@ -100,41 +105,58 @@ where
         // If the claim's parent index is `u32::MAX`, it is the root claim. In this case, the only
         // opportunity is to attack if we disagree with the root - there is no other valid move.
         if claim.parent_index == u32::MAX && attacking_root {
-            return Ok(FaultSolverResponse::Attack);
+            let claim_hash =
+                Self::fetch_state_hash(&self.provider, claim.position.make_move(true), claim)?;
+            return Ok(FaultSolverResponse::Move(true, claim_index, claim_hash));
         }
 
         // Fetch the local trace provider's opinion of the state hash at the claim's position
-        let self_state_hash = self.provider.state_hash(claim.position).map_err(|e| {
-            // Prior to returning the error, mark the claim as unvisited so that it can be
-            // re-visited by the solver in the future.
-            claim.visited = false;
-            e
-        })?;
+        let self_state_hash = Self::fetch_state_hash(&self.provider, claim.position, claim)?;
 
         // TODO(clabby): Consider that because we'll have to search for the pre/post state for the
         // step instruction, we may also need to know if all claims at agreed levels are correct in
         // the path up to the root claim.
 
-        let move_direction = if self_state_hash == claim.value {
-            // If the local opinion of the state hash at the claim's position is the same as the
-            // claim's opinion about the state, then the proper move is to defend the claim.
-            FaultSolverResponse::Defend
-        } else {
-            // If the local opinion of the state hash at the claim's position is different than
-            // the claim's opinion about the state, then the proper move is to attack the claim.
-            FaultSolverResponse::Attack
-        };
+        // Determine if the response will be an attack or a defense.
+        let is_attack = self_state_hash != claim.value;
 
         // If the next move will be at the max depth of the game, then the proper move is to
         // perform a VM step against the claim. Otherwise, move in the appropriate direction.
         //
         // TODO(clabby): Return the data necessary for the inputs to the contract calls in the
         // `FaultSolverResponse` variants.
-        if claim_depth == world.max_depth - 1 {
-            Ok(FaultSolverResponse::Step(Box::new(move_direction)))
+        if claim_depth == max_depth - 1 {
+            Ok(FaultSolverResponse::Step(is_attack))
         } else {
-            Ok(move_direction)
+            // Fetch the local trace provider's opinion of the state hash at the move's position.
+            let claim_hash =
+                Self::fetch_state_hash(&self.provider, claim.position.make_move(is_attack), claim)?;
+
+            // If the local opinion of the state hash at the claim's position is different than
+            // the claim's opinion about the state, then the proper move is to attack the claim.
+            // If the local opinion of the state hash at the claim's position is the same as the
+            // claim's opinion about the state, then the proper move is to defend the claim.
+            Ok(FaultSolverResponse::Move(
+                is_attack,
+                claim_index,
+                claim_hash,
+            ))
         }
+    }
+
+    /// Fetches the state hash at a given position from a [TraceProvider].
+    /// If the fetch fails, the claim is marked as unvisited and the error is returned.
+    #[inline]
+    fn fetch_state_hash(
+        provider: &P,
+        position: Position,
+        observed_claim: &mut ClaimData,
+    ) -> anyhow::Result<Claim> {
+        let state_hash = provider.state_hash(position).map_err(|e| {
+            observed_claim.visited = false;
+            e
+        })?;
+        Ok(state_hash)
     }
 }
 
@@ -163,7 +185,10 @@ mod test {
                 solver.provider.state_hash(1).unwrap(),
                 FaultSolverResponse::Skip(0),
             ),
-            (root_claim, FaultSolverResponse::Attack),
+            (
+                root_claim,
+                FaultSolverResponse::Move(true, 0, solver.provider.state_hash(2).unwrap()),
+            ),
         ];
 
         for (claim, expected_move) in moves {
@@ -191,9 +216,12 @@ mod test {
         let moves = [
             (
                 solver.provider.state_hash(4).unwrap(),
-                FaultSolverResponse::Defend,
+                FaultSolverResponse::Move(false, 2, solver.provider.state_hash(10).unwrap()),
             ),
-            (root_claim, FaultSolverResponse::Attack),
+            (
+                root_claim,
+                FaultSolverResponse::Move(true, 2, solver.provider.state_hash(8).unwrap()),
+            ),
         ];
 
         for (claim, expected_move) in moves {
@@ -234,14 +262,6 @@ mod test {
     #[test]
     fn available_moves_static_many() {
         let (solver, root_claim) = mocks();
-        let moves = [
-            (
-                solver.provider.state_hash(4).unwrap(),
-                FaultSolverResponse::Defend,
-            ),
-            (root_claim, FaultSolverResponse::Attack),
-        ];
-
         let mut state = FaultDisputeState::new(
             vec![
                 // Invalid root claim - ATTACK
@@ -285,9 +305,9 @@ mod test {
         let moves = solver.available_moves(&mut state).unwrap();
         assert_eq!(
             &[
-                FaultSolverResponse::Attack,
+                FaultSolverResponse::Move(true, 0, solver.provider.state_hash(2).unwrap()),
                 FaultSolverResponse::Skip(1),
-                FaultSolverResponse::Defend,
+                FaultSolverResponse::Move(false, 2, solver.provider.state_hash(10).unwrap()),
                 FaultSolverResponse::Skip(3)
             ],
             moves.as_slice()

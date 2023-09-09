@@ -2,6 +2,7 @@
 
 use crate::ChessClock;
 use crate::Gindex;
+use durin_primitives::Claim;
 
 pub type Position = u128;
 pub type Clock = u128;
@@ -10,15 +11,13 @@ pub type Clock = u128;
 /// return when asked to make a move.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FaultSolverResponse {
-    /// A response indicating that the proper move is to attack the given claim.
-    Attack,
-    /// A response indicating that the proper move is to defend the given claim.
-    Defend,
+    /// A response indicating that the proper move is to attack or defend the given claim.
+    Move(bool, usize, Claim),
     /// A response indicating that the proper move is to skip the given claim.
     Skip(usize),
     /// A response indicating that the proper move is to perform a VM step against
     /// the given claim.
-    Step(Box<FaultSolverResponse>),
+    Step(bool),
 }
 
 /// The [VMStatus] enum describes the status of a VM at a given position.
