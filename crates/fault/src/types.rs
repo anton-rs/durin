@@ -15,7 +15,7 @@ pub enum FaultSolverResponse {
     /// A response indicating that the proper move is to defend the given claim.
     Defend,
     /// A response indicating that the proper move is to skip the given claim.
-    Skip,
+    Skip(usize),
     /// A response indicating that the proper move is to perform a VM step against
     /// the given claim.
     Step(Box<FaultSolverResponse>),

@@ -3,8 +3,7 @@
 #![allow(dead_code, unused_variables)]
 
 use crate::{
-    ClaimData, FaultDisputeGame, FaultDisputeState, FaultSolverResponse, Gindex, Position,
-    TraceProvider,
+    FaultDisputeGame, FaultDisputeState, FaultSolverResponse, Gindex, Position, TraceProvider,
 };
 use durin_primitives::{DisputeGame, DisputeSolver};
 use std::marker::PhantomData;
@@ -29,16 +28,24 @@ where
 {
     fn available_moves(
         &self,
-        game: &FaultDisputeState,
+        game: &mut FaultDisputeState,
     ) -> anyhow::Result<Vec<FaultSolverResponse>> {
         // Fetch the local opinion on the root claim.
         let attacking_root =
             self.provider.state_hash(Self::ROOT_CLAIM_POSITION)? != game.root_claim();
 
-        game.state()
+        // Fetch the indices of all unvisited claims within the world DAG.
+        let unvisited_indices = game
+            .state()
             .iter()
-            .filter(|c| !c.visited)
-            .map(|c| self.solve_claim(game, c, attacking_root))
+            .enumerate()
+            .filter_map(|(i, c)| (!c.visited).then_some(i))
+            .collect::<Vec<_>>();
+
+        // Solve each unvisited claim, set the visited flag, and return the responses.
+        unvisited_indices
+            .iter()
+            .map(|claim_index| self.solve_claim(game, *claim_index, attacking_root))
             .collect()
     }
 }
@@ -60,22 +67,41 @@ where
     #[inline]
     fn solve_claim(
         &self,
-        game: &FaultDisputeState,
-        claim: &ClaimData,
+        world: &mut FaultDisputeState,
+        claim_index: usize,
         attacking_root: bool,
     ) -> anyhow::Result<FaultSolverResponse> {
+        let claim = world
+            .state_mut()
+            .get_mut(claim_index)
+            .ok_or(anyhow::anyhow!("Failed to fetch claim from passed state"))?;
         let claim_depth = claim.position.depth();
+
+        // Mark the claim as visited. This mutates the passed state and must be reverted if an
+        // error is thrown.
+        claim.visited = true;
 
         // In the case that the claim's opinion about the root claim is the same as the local
         // opinion, we can skip the claim. It does not matter if this claim is valid or not
         // because it supports the local opinion of the root claim. Countering it would put the
         // solver in an opposing position to its final objective.
         if claim_depth % 2 == attacking_root as u8 {
-            return Ok(FaultSolverResponse::Skip);
+            return Ok(FaultSolverResponse::Skip(claim_index));
+        }
+
+        // If the claim's parent index is `u32::MAX`, it is the root claim. In this case, the only
+        // opportunity is to attack if we disagree with the root - there is no other valid move.
+        if claim.parent_index == u32::MAX && attacking_root {
+            return Ok(FaultSolverResponse::Attack);
         }
 
         // Fetch the local trace provider's opinion of the state hash at the claim's position
-        let self_state_hash = self.provider.state_hash(claim.position)?;
+        let self_state_hash = self.provider.state_hash(claim.position).map_err(|e| {
+            // Prior to returning the error, mark the claim as unvisited so that it can be
+            // re-visited by the solver in the future.
+            claim.visited = false;
+            e
+        })?;
 
         let move_direction = if self_state_hash == claim.value {
             // If the local opinion of the state hash at the claim's position is the same as the
@@ -92,7 +118,7 @@ where
         //
         // TODO(clabby): Return the data necessary for the inputs to the contract calls in the
         // `FaultSolverResponse` variants.
-        if claim_depth == game.max_depth - 1 {
+        if claim_depth == world.max_depth - 1 {
             Ok(FaultSolverResponse::Step(Box::new(move_direction)))
         } else {
             Ok(move_direction)
@@ -104,7 +130,7 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::providers::AlphabetTraceProvider;
+    use crate::{providers::AlphabetTraceProvider, ClaimData};
     use alloy_primitives::hex;
     use durin_primitives::{Claim, GameStatus};
 
@@ -123,13 +149,13 @@ mod test {
         let moves = [
             (
                 solver.provider.state_hash(1).unwrap(),
-                FaultSolverResponse::Skip,
+                FaultSolverResponse::Skip(0),
             ),
             (root_claim, FaultSolverResponse::Attack),
         ];
 
         for (claim, expected_move) in moves {
-            let state = FaultDisputeState::new(
+            let mut state = FaultDisputeState::new(
                 vec![ClaimData {
                     parent_index: u32::MAX,
                     visited: false,
@@ -142,7 +168,7 @@ mod test {
                 4,
             );
 
-            let moves = solver.available_moves(&state).unwrap();
+            let moves = solver.available_moves(&mut state).unwrap();
             assert_eq!(&[expected_move], moves.as_slice());
         }
     }
@@ -159,7 +185,7 @@ mod test {
         ];
 
         for (claim, expected_move) in moves {
-            let state = FaultDisputeState::new(
+            let mut state = FaultDisputeState::new(
                 vec![
                     ClaimData {
                         parent_index: u32::MAX,
@@ -188,8 +214,71 @@ mod test {
                 4,
             );
 
-            let moves = solver.available_moves(&state).unwrap();
+            let moves = solver.available_moves(&mut state).unwrap();
             assert_eq!(&[expected_move], moves.as_slice());
         }
+    }
+
+    #[test]
+    fn available_moves_static_many() {
+        let (solver, root_claim) = mocks();
+        let moves = [
+            (
+                solver.provider.state_hash(4).unwrap(),
+                FaultSolverResponse::Defend,
+            ),
+            (root_claim, FaultSolverResponse::Attack),
+        ];
+
+        let mut state = FaultDisputeState::new(
+            vec![
+                // Invalid root claim - ATTACK
+                ClaimData {
+                    parent_index: u32::MAX,
+                    visited: false,
+                    value: root_claim,
+                    position: 1,
+                    clock: 0,
+                },
+                // Right level; Wrong claim - SKIP
+                ClaimData {
+                    parent_index: 0,
+                    visited: false,
+                    value: root_claim,
+                    position: 2,
+                    clock: 0,
+                },
+                // Wrong level; Right claim - DEFEND
+                ClaimData {
+                    parent_index: 1,
+                    visited: false,
+                    value: solver.provider.state_hash(4).unwrap(),
+                    position: 4,
+                    clock: 0,
+                },
+                // Right level; Wrong claim - SKIP
+                ClaimData {
+                    parent_index: 3,
+                    visited: false,
+                    value: root_claim,
+                    position: 8,
+                    clock: 0,
+                },
+            ],
+            root_claim,
+            GameStatus::InProgress,
+            4,
+        );
+
+        let moves = solver.available_moves(&mut state).unwrap();
+        assert_eq!(
+            &[
+                FaultSolverResponse::Attack,
+                FaultSolverResponse::Skip(1),
+                FaultSolverResponse::Defend,
+                FaultSolverResponse::Skip(3)
+            ],
+            moves.as_slice()
+        );
     }
 }
