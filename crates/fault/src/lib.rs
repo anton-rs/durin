@@ -1,5 +1,7 @@
 //! The fault module contains types and traits related to the FaultDisputeGame.
 
+extern crate alloy_primitives;
+extern crate alloy_sol_types;
 extern crate durin_primitives;
 
 mod clock;

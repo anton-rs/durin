@@ -19,9 +19,9 @@ mod test {
     use super::ChessClock;
 
     #[test]
-    fn test_chess_clock() {
-        let clock = 0xa0000000000000001;
+    fn chess_clock_correctness() {
+        let clock = 0xa5000000000000001;
         assert_eq!(clock.duration(), 10);
-        assert_eq!(clock.timestamp(), 1);
+        assert_eq!(clock.timestamp(), 5764607523034234881);
     }
 }

@@ -20,15 +20,15 @@ pub trait FaultDisputeGame: DisputeGame {
 
 /// A [TraceProvider] is a type that can provide the raw state (in bytes) at a given
 /// [Position] within a [FaultDisputeGame].
-pub trait TraceProvider {
+pub trait TraceProvider<P> {
     /// Returns the raw absolute prestate (in bytes).
-    fn absolute_prestate(&self) -> &Vec<u8>;
+    fn absolute_prestate(&self) -> &P;
 
     /// Returns the absolute prestate hash.
     fn absolute_prestate_hash(&self) -> Claim;
 
     /// Returns the raw state (in bytes) at the given position.
-    fn trace_at(&self, position: Position) -> anyhow::Result<Vec<u8>>;
+    fn trace_at(&self, position: Position) -> anyhow::Result<P>;
 
     /// Returns the state hash at the given position.
     fn state_hash(&self, position: Position) -> anyhow::Result<Claim>;
@@ -38,7 +38,7 @@ pub trait TraceProvider {
 /// solver is responsible for honestly responding to any given [ClaimData] in a given
 /// [FaultDisputeState]. It uses a [TraceProvider] to fetch the absolute prestate of the VM as
 /// well as the state at any given [Position] within the tree.
-pub trait FaultDisputeSolver<P: TraceProvider>:
+pub trait FaultDisputeSolver<AP, P: TraceProvider<AP>>:
     DisputeSolver<FaultDisputeState, ClaimData, FaultSolverResponse>
 {
 }

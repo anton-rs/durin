@@ -11,4 +11,5 @@ durin-primitives = { path = "../primitives" }
 
 # External
 alloy-primitives = { git = "https://github.com/alloy-rs/core.git" }
+alloy-sol-types = { git = "https://github.com/alloy-rs/core.git" }
 anyhow = "1.0.75"
