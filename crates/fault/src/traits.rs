@@ -1,10 +1,7 @@
 //! This module holds traits related to the [FaultDisputeGame]
 
-use crate::{
-    state::{ClaimData, FaultDisputeState},
-    FaultSolverResponse, Position,
-};
-use durin_primitives::{Claim, DisputeGame, DisputeSolver};
+use crate::{state::ClaimData, Position};
+use durin_primitives::{Claim, DisputeGame};
 
 /// A [FaultDisputeGame] is a [DisputeGame] that is played over a FaultVM backend. This
 /// trait extends the [DisputeGame] trait with functionality that is specific to the
@@ -19,27 +16,18 @@ pub trait FaultDisputeGame: DisputeGame {
 
 /// A [TraceProvider] is a type that can provide the raw state (in bytes) at a given
 /// [Position] within a [FaultDisputeGame].
-pub trait TraceProvider<P> {
+pub trait TraceProvider<P: AsRef<[u8]>> {
     /// Returns the raw absolute prestate (in bytes).
-    fn absolute_prestate(&self) -> &P;
+    fn absolute_prestate(&self) -> P;
 
     /// Returns the absolute prestate hash.
     fn absolute_prestate_hash(&self) -> Claim;
 
     /// Returns the raw state (in bytes) at the given position.
-    fn trace_at(&self, position: Position) -> anyhow::Result<P>;
+    fn state_at(&self, position: Position) -> anyhow::Result<P>;
 
     /// Returns the state hash at the given position.
     fn state_hash(&self, position: Position) -> anyhow::Result<Claim>;
-}
-
-/// A [FaultDisputeSolver] is a [DisputeSolver] that is played over a fault proof VM backend. The
-/// solver is responsible for honestly responding to any given [ClaimData] in a given
-/// [FaultDisputeState]. It uses a [TraceProvider] to fetch the absolute prestate of the VM as
-/// well as the state at any given [Position] within the tree.
-pub trait FaultDisputeSolver<AP, P: TraceProvider<AP>>:
-    DisputeSolver<FaultDisputeState, ClaimData, FaultSolverResponse>
-{
 }
 
 /// The [Gindex] trait defines the interface of a generalized index within a binary tree.

@@ -34,9 +34,9 @@ pub trait DisputeGame {
 
 /// The [DisputeSolver] trait describes the base functionality of a solver for
 /// a [DisputeGame].
-pub trait DisputeSolver<DG: DisputeGame, C, R> {
-    /// Returns the response of the solver provided a [DisputeGame] and a
-    /// [Claim] within it. The consumer of the response is responsible for
-    /// dispatching the action associated with it.
-    fn respond(&self, game: &DG, claim: C) -> R;
+pub trait DisputeSolver<DG: DisputeGame, R> {
+    /// Returns any available responses computed by the solver provided a [DisputeGame].
+    /// The consumer of the response is responsible for dispatching the action associated
+    /// with the responses.
+    fn available_moves(&self, game: &DG) -> anyhow::Result<Vec<R>>;
 }

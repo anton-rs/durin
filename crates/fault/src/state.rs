@@ -9,11 +9,11 @@ use durin_primitives::{Claim, DisputeGame, GameStatus};
 /// [crate::FaultDisputeGame]'s state on-chain.
 #[derive(Debug, Clone, Copy)]
 pub struct ClaimData {
-    parent_index: u32,
-    countered: bool,
-    value: Claim,
-    position: Position,
-    clock: Clock,
+    pub parent_index: u32,
+    pub visited: bool,
+    pub value: Claim,
+    pub position: Position,
+    pub clock: Clock,
 }
 
 /// the [FaultDisputeState] struct holds the in-memory representation of a
