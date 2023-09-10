@@ -30,7 +30,7 @@ impl TryFrom<u8> for GameType {
 }
 
 /// The [GameStatus] enum is used to indicate the status of a dispute game.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq, Copy)]
 pub enum GameStatus {
     /// The [GameStatus::InProgress] variant is used to indicate that the dispute game is
     /// still in progress.

@@ -256,6 +256,7 @@ mod test {
                     value: claim,
                     position: 1,
                     clock: 0,
+                    countered: false,
                 }],
                 claim,
                 GameStatus::InProgress,
@@ -290,6 +291,7 @@ mod test {
                         value: root_claim,
                         position: 1,
                         clock: 0,
+                        countered: false,
                     },
                     ClaimData {
                         parent_index: 0,
@@ -297,6 +299,7 @@ mod test {
                         value: solver.provider().state_hash(2).unwrap(),
                         position: 2,
                         clock: 0,
+                        countered: false,
                     },
                     ClaimData {
                         parent_index: 1,
@@ -304,6 +307,7 @@ mod test {
                         value: claim,
                         position: 4,
                         clock: 0,
+                        countered: false,
                     },
                 ],
                 root_claim,
@@ -328,6 +332,7 @@ mod test {
                     value: root_claim,
                     position: 1,
                     clock: 0,
+                    countered: false,
                 },
                 // Right level; Wrong claim - SKIP
                 ClaimData {
@@ -336,6 +341,7 @@ mod test {
                     value: root_claim,
                     position: 2,
                     clock: 0,
+                    countered: false,
                 },
                 // Wrong level; Right claim - DEFEND
                 ClaimData {
@@ -344,6 +350,7 @@ mod test {
                     value: solver.provider().state_hash(4).unwrap(),
                     position: 4,
                     clock: 0,
+                    countered: false,
                 },
                 // Right level; Wrong claim - SKIP
                 ClaimData {
@@ -352,6 +359,7 @@ mod test {
                     value: root_claim,
                     position: 8,
                     clock: 0,
+                    countered: false,
                 },
             ],
             root_claim,
@@ -395,6 +403,7 @@ mod test {
                         value: root_claim,
                         position: 1,
                         clock: 0,
+                        countered: false,
                     },
                     // Honest Attack
                     ClaimData {
@@ -403,6 +412,7 @@ mod test {
                         value: solver.provider().state_hash(2).unwrap(),
                         position: 2,
                         clock: 0,
+                        countered: false,
                     },
                     // Wrong level; Wrong claim - ATTACK
                     ClaimData {
@@ -411,6 +421,7 @@ mod test {
                         value: root_claim,
                         position: 4,
                         clock: 0,
+                        countered: false,
                     },
                     // Honest Attack
                     ClaimData {
@@ -419,6 +430,7 @@ mod test {
                         value: solver.provider().state_hash(8).unwrap(),
                         position: 8,
                         clock: 0,
+                        countered: false,
                     },
                     // Wrong level; Wrong claim - ATTACK STEP
                     ClaimData {
@@ -431,6 +443,7 @@ mod test {
                         },
                         position: 16,
                         clock: 0,
+                        countered: false,
                     },
                 ],
                 root_claim,
