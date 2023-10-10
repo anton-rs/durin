@@ -10,8 +10,8 @@ version.workspace = true
 durin-primitives = { path = "../primitives" }
 
 # External
-alloy-primitives = { git = "https://github.com/alloy-rs/core.git" }
-alloy-sol-types = { git = "https://github.com/alloy-rs/core.git" }
+alloy-primitives = { version = "0.4.2" }
+alloy-sol-types = { version = "0.4.2" }
 anyhow = "1.0.75"
 
 [dev-dependencies]

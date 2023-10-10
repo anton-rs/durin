@@ -6,5 +6,5 @@ authors = ["clabby"]
 version.workspace = true
 
 [dependencies]
-alloy-primitives = { git = "https://github.com/alloy-rs/core.git" }
+alloy-primitives = { version = "0.4.2" }
 anyhow = "1.0.75"

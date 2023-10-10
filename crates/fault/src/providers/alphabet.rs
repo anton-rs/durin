@@ -38,7 +38,7 @@ impl TraceProvider<[u8; 1]> for AlphabetTraceProvider {
 
     fn absolute_prestate_hash(&self) -> Claim {
         let prestate = U256::from(self.absolute_prestate);
-        let mut prestate_hash = keccak256(<sol!(uint256)>::encode_single(&prestate));
+        let mut prestate_hash = keccak256(<sol!(uint256)>::abi_encode(&prestate));
         prestate_hash[0] = VMStatus::Unfinished as u8;
         prestate_hash
     }
@@ -58,7 +58,7 @@ impl TraceProvider<[u8; 1]> for AlphabetTraceProvider {
             U256::from(position.trace_index(self.max_depth)),
             U256::from(self.state_at(position)?[0]),
         );
-        let mut state_hash = keccak256(AlphabetClaimConstruction::encode(&state_sol));
+        let mut state_hash = keccak256(AlphabetClaimConstruction::abi_encode(&state_sol));
         state_hash[0] = VMStatus::Invalid as u8;
         Ok(state_hash)
     }
@@ -82,7 +82,7 @@ mod test {
         };
 
         let prestate_sol = U256::from(provider.absolute_prestate()[0]);
-        let prestate = <sol!(uint256)>::encode_single(&prestate_sol);
+        let prestate = <sol!(uint256)>::abi_encode(&prestate_sol);
         assert_eq!(
             hex!("0000000000000000000000000000000000000000000000000000000000000061"),
             prestate.as_slice()
@@ -108,7 +108,8 @@ mod test {
             let position = compute_gindex(provider.max_depth, i as u64);
 
             let expected_encoded = (U256::from(i), U256::from(expected));
-            let mut expected_hash = keccak256(AlphabetClaimConstruction::encode(&expected_encoded));
+            let mut expected_hash =
+                keccak256(AlphabetClaimConstruction::abi_encode(&expected_encoded));
             expected_hash[0] = VMStatus::Invalid as u8;
 
             assert_eq!(provider.state_at(position).unwrap()[0], expected);
