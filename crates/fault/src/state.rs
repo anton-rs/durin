@@ -2,18 +2,20 @@
 
 #![allow(dead_code, unused_variables)]
 
-use crate::{Clock, FaultDisputeGame, Position};
+use crate::{ChessClock, Clock, FaultDisputeGame, Gindex, Position};
 use durin_primitives::{Claim, DisputeGame, GameStatus};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 /// The [ClaimData] struct holds the data associated with a claim within a
 /// [crate::FaultDisputeGame]'s state on-chain.
 #[derive(Debug, Clone, Copy)]
 pub struct ClaimData {
     pub parent_index: u32,
-    pub visited: bool,
+    pub countered: bool,
     pub value: Claim,
     pub position: Position,
     pub clock: Clock,
+    pub visited: bool,
 }
 
 /// the [FaultDisputeState] struct holds the in-memory representation of a
@@ -60,8 +62,64 @@ impl DisputeGame for FaultDisputeState {
         &self.status
     }
 
-    fn resolve(&mut self) -> &GameStatus {
-        &self.status
+    // TODO(clabby): Generic resolution mechanisms
+    fn resolve(&mut self, sim: bool) -> anyhow::Result<GameStatus> {
+        if self.status != GameStatus::InProgress {
+            return Ok(self.status);
+        }
+
+        let mut left_most_index = self.state.len() - 1;
+        let mut left_most_trace_index = u64::MAX;
+        for i in (0..=left_most_index).rev() {
+            let claim = &self
+                .state()
+                .get(i)
+                .ok_or(anyhow::anyhow!("Could not fetch claim from state"))?;
+
+            if claim.countered {
+                continue;
+            }
+
+            let trace_index = claim.position.trace_index(self.max_depth);
+            if trace_index < left_most_trace_index {
+                left_most_trace_index = trace_index;
+                left_most_index = i + 1;
+            }
+        }
+
+        let left_most_uncontested = self
+            .state()
+            .get(left_most_index)
+            .ok_or(anyhow::anyhow!("Could not fetch claim from state"))?;
+
+        let status = if left_most_uncontested.position.depth() % 2 == 0
+            && left_most_trace_index != u64::MAX
+        {
+            GameStatus::DefenderWins
+        } else {
+            GameStatus::ChallengerWins
+        };
+
+        if !sim {
+            let parent_index = left_most_uncontested.parent_index;
+            let opposing_clock = if parent_index == u32::MAX {
+                left_most_uncontested.clock
+            } else {
+                self.state()
+                    .get(parent_index as usize)
+                    .ok_or(anyhow::anyhow!("Could not fetch parent claim from state"))?
+                    .clock
+            };
+
+            let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
+            if opposing_clock.duration() + (now - opposing_clock.timestamp()) <= 604800 >> 1 {
+                anyhow::bail!("Clocks have not expired")
+            }
+
+            self.status = status;
+        }
+
+        Ok(status)
     }
 }
 

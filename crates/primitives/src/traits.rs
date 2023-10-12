@@ -30,7 +30,11 @@ pub trait DisputeGame {
     fn status(&self) -> &GameStatus;
 
     /// Resolves the dispute game, returning the [GameStatus] after resolution.
-    fn resolve(&mut self) -> &GameStatus;
+    ///
+    /// ### Takes
+    /// - `sim`: A boolean indicating whether or not the resolution modifies
+    ///          the state and updates the status.
+    fn resolve(&mut self, sim: bool) -> anyhow::Result<GameStatus>;
 }
 
 /// The [DisputeSolver] trait describes the base functionality of a solver for
