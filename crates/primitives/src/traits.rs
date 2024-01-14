@@ -2,6 +2,7 @@
 
 use crate::{dispute_game::Claim, GameStatus};
 use std::sync::Arc;
+use tokio::sync::Mutex;
 
 /// The [DisputeGame] trait is the highest level trait in the library, describing
 /// the state of a simple primitive dispute. It has several key properties:
@@ -35,9 +36,10 @@ pub trait DisputeGame {
 
 /// The [DisputeSolver] trait describes the base functionality of a solver for
 /// a [DisputeGame].
+#[async_trait::async_trait]
 pub trait DisputeSolver<DG: DisputeGame, R> {
     /// Returns any available responses computed by the solver provided a [DisputeGame].
     /// The consumer of the response is responsible for dispatching the action associated
     /// with the responses.
-    fn available_moves(&self, game: &mut DG) -> anyhow::Result<Arc<[R]>>;
+    async fn available_moves(&self, game: Arc<Mutex<DG>>) -> anyhow::Result<Arc<[R]>>;
 }

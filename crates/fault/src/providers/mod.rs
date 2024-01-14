@@ -2,3 +2,6 @@
 
 mod alphabet;
 pub use self::alphabet::AlphabetTraceProvider;
+
+mod output;
+pub use self::output::OutputTraceProvider;

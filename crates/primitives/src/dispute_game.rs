@@ -3,17 +3,18 @@
 use alloy_primitives::B256;
 use std::convert::TryFrom;
 
+/// The [Claim] type is an alias to [B256], used to deliniate a claim hash from a regular hash.
 pub type Claim = B256;
 
 /// The [GameType] enum is used to indicate which type of dispute game is being played.
 #[derive(Debug, Clone)]
 pub enum GameType {
-    /// The [GameType::FaultCannon] variant is used to indicate that the dispute game is being
-    /// played over a FaultDisputeGame with the Cannon VM as its backend source of truth.
+    /// The [GameType::FaultCannon] variant is used to indicate that the dispute game is being played over a
+    /// FaultDisputeGame with the Cannon VM as its backend source of truth.
     FaultCannon = 0,
-    /// The [GameType::Alphabet] variant is used to indicate that the dispute game is being
-    /// played over a FaultDisputeGame with the mock Alphabet VM as its backend source
-    /// of truth. This game is used for testing purposes.
+    /// The [GameType::Alphabet] variant is used to indicate that the dispute game is being played over a
+    /// FaultDisputeGame with the mock Alphabet VM as its backend source of truth. This game is used for
+    /// testing purposes.
     Alphabet = 255,
 }
 
@@ -32,14 +33,13 @@ impl TryFrom<u8> for GameType {
 /// The [GameStatus] enum is used to indicate the status of a dispute game.
 #[derive(Debug, Clone)]
 pub enum GameStatus {
-    /// The [GameStatus::InProgress] variant is used to indicate that the dispute game is
-    /// still in progress.
+    /// The [GameStatus::InProgress] variant is used to indicate that the dispute game is still in progress.
     InProgress = 0,
-    /// The [GameStatus::ChallengerWins] variant is used to indicate that the challenger
-    /// of the root claim has won the dispute game.
+    /// The [GameStatus::ChallengerWins] variant is used to indicate that the challenger of the root claim has won the
+    /// dispute game.
     ChallengerWins = 1,
-    /// The [GameStatus::DefenderWins] variant is used to indicate that the defender
-    /// of the root claim has won the dispute game.
+    /// The [GameStatus::DefenderWins] variant is used to indicate that the defender of the root claim has won the
+    /// dispute game.
     DefenderWins = 2,
 }
 

@@ -8,8 +8,7 @@ use std::sync::Arc;
 pub type Position = u128;
 pub type Clock = u128;
 
-/// The [FaultSolverResponse] enum describes the response that a solver should
-/// return when asked to make a move.
+/// The [FaultSolverResponse] enum describes the response that a solver should return when asked to make a move.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FaultSolverResponse<T: AsRef<[u8]>> {
     /// A response indicating that the proper move is to attack or defend the given claim.

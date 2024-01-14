@@ -1,18 +1,31 @@
 [package]
 name = "durin-fault"
 description = "Game solver for the OP Stack's FaultDisputeGame"
-authors = ["clabby"]
+resolver = "2"
 
+edition.workspace = true
 version.workspace = true
+authors.workspace = true
 
 [dependencies]
 # Internal
 durin-primitives = { path = "../primitives" }
 
 # External
-alloy-primitives = { version = "0.4.2" }
-alloy-sol-types = { version = "0.4.2" }
-anyhow = "1.0.75"
+
+alloy-primitives = "0.6.0"
+alloy-sol-types = "0.6.0"
+alloy-rpc-client = { git = "https://github.com/alloy-rs/alloy" }
+alloy-transport = { git = "https://github.com/alloy-rs/alloy" }
+alloy-transport-http = { git = "https://github.com/alloy-rs/alloy" }
+anyhow = "1.0.79"
+
+# Async
+tokio = { version = "1.35.1", features = ["macros"] }
+url = "2.5.0"
+reqwest = "0.11.23"
+async-trait = "0.1.77"
+futures = "0.3.30"
 
 [dev-dependencies]
-proptest = "1.2.0"
+proptest = "1.4.0"
