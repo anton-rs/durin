@@ -1,8 +1,10 @@
 //! This module holds traits related to the [FaultDisputeGame]
 
 use crate::{state::ClaimData, FaultDisputeState, FaultSolverResponse, Position};
+use anyhow::Result;
 use durin_primitives::{Claim, DisputeGame};
 use std::sync::Arc;
+use tokio::sync::Mutex;
 
 /// A [FaultDisputeGame] is a [DisputeGame] that is played over a FaultVM backend. This
 /// trait extends the [DisputeGame] trait with functionality that is specific to the
@@ -17,7 +19,8 @@ pub trait FaultDisputeGame: DisputeGame {
 
 /// A [FaultClaimSolver] is a solver that finds the correct response to a given [durin_primitives::Claim]
 /// within a [FaultDisputeGame].
-pub trait FaultClaimSolver<T: AsRef<[u8]>, P: TraceProvider<T>> {
+#[async_trait::async_trait]
+pub trait FaultClaimSolver<P: TraceProvider> {
     /// Finds the best move against a [crate::ClaimData] in a given [FaultDisputeState].
     ///
     /// ### Takes
@@ -27,35 +30,36 @@ pub trait FaultClaimSolver<T: AsRef<[u8]>, P: TraceProvider<T>> {
     ///
     /// ### Returns
     /// - [FaultSolverResponse] or [Err]: The best move against the claim.
-    fn solve_claim(
+    async fn solve_claim(
         &self,
-        world: &mut FaultDisputeState,
+        world: Arc<Mutex<FaultDisputeState>>,
         claim_index: usize,
         attacking_root: bool,
-    ) -> anyhow::Result<FaultSolverResponse<T>>;
+    ) -> Result<FaultSolverResponse>;
 
-    /// Returns a shared reference to the [TraceProvider] that the solver uses to fetch
-    /// the state of the VM and commitments to it.
+    /// Returns a shared reference to the [TraceProvider] that the solver uses to fetch the state of the VM and
+    /// commitments to it.
     fn provider(&self) -> &P;
 }
 
-/// A [TraceProvider] is a type that can provide the raw state (in bytes) at a given
-/// [Position] within a [FaultDisputeGame].
-pub trait TraceProvider<P: AsRef<[u8]>> {
+/// A [TraceProvider] is a type that can provide the raw state (in bytes) at a given [Position] within
+/// a [FaultDisputeGame].
+#[async_trait::async_trait]
+pub trait TraceProvider {
     /// Returns the raw absolute prestate (in bytes).
-    fn absolute_prestate(&self) -> Arc<P>;
+    async fn absolute_prestate(&self, position: Position) -> Result<Arc<[u8]>>;
 
     /// Returns the absolute prestate hash.
-    fn absolute_prestate_hash(&self) -> Claim;
+    async fn absolute_prestate_hash(&self, position: Position) -> Result<Claim>;
 
     /// Returns the raw state (in bytes) at the given position.
-    fn state_at(&self, position: Position) -> anyhow::Result<Arc<P>>;
+    async fn state_at(&self, position: Position) -> Result<Arc<[u8]>>;
 
     /// Returns the state hash at the given position.
-    fn state_hash(&self, position: Position) -> anyhow::Result<Claim>;
+    async fn state_hash(&self, position: Position) -> Result<Claim>;
 
     /// Returns the raw proof for the commitment at the given position.
-    fn proof_at(&self, position: Position) -> anyhow::Result<Arc<[u8]>>;
+    async fn proof_at(&self, position: Position) -> Result<Arc<[u8]>>;
 }
 
 /// The [Gindex] trait defines the interface of a generalized index within a binary tree.
@@ -86,11 +90,9 @@ pub trait Gindex {
     fn make_move(&self, is_attack: bool) -> Self;
 }
 
-/// The [ChessClock] trait defines the interface of a single side of a chess clock
-/// at a given state in time.
+/// The [ChessClock] trait defines the interface of a single side of a chess clock at a given state in time.
 pub trait ChessClock {
-    /// Returns the seconds elapsed on the chess clock in seconds when it was
-    /// last stopped.
+    /// Returns the seconds elapsed on the chess clock in seconds when it was last stopped.
     fn duration(&self) -> u64;
 
     /// Returns the timestamp of when the chess clock was last stopped.

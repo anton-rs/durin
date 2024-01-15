@@ -8,17 +8,23 @@ use std::sync::Arc;
 pub type Position = u128;
 pub type Clock = u128;
 
-/// The [FaultSolverResponse] enum describes the response that a solver should
-/// return when asked to make a move.
+/// The [FaultSolverResponse] enum describes the response that a solver should return when asked to make a move.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum FaultSolverResponse<T: AsRef<[u8]>> {
+pub enum FaultSolverResponse {
     /// A response indicating that the proper move is to attack or defend the given claim.
     Move(bool, usize, Claim),
     /// A response indicating that the proper move is to skip the given claim.
     Skip(usize),
-    /// A response indicating that the proper move is to perform a VM step against
-    /// the given claim.
-    Step(bool, usize, Arc<T>, Arc<[u8]>),
+    /// A response indicating that the proper move is to perform a VM step against the given claim.
+    Step(bool, usize, Arc<[u8]>, Arc<[u8]>),
+    /// A response indicating that the actor should request the FDG to post a local preimage to the `PreimageOracle`.
+    LocalPreimage(usize, usize, usize),
+    /// A response indicating that the actor should post a preimage directly to the `PreimageOracle`.
+    GlobalPreimage(usize, Arc<[u8]>),
+    /// A response indicating that the actor should resolve an individual claim.
+    ResolveClaim(usize),
+    /// A response indicating that the actor should resolve the entire dispute game.
+    ResolveGlobal,
 }
 
 /// The [VMStatus] enum describes the status of a VM at a given position.

@@ -1,8 +1,6 @@
 //! The fault module contains types and traits related to the FaultDisputeGame.
 
-extern crate alloy_primitives;
-extern crate alloy_sol_types;
-extern crate durin_primitives;
+#![allow(dead_code, unused_imports)]
 
 #[cfg(test)]
 extern crate proptest;

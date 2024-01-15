@@ -1,10 +1,15 @@
 [package]
 name = "durin-primitives"
 description = "Primitive types for Durin."
-authors = ["clabby"]
+resolver = "2"
 
+edition.workspace = true
 version.workspace = true
+authors.workspace = true
 
 [dependencies]
-alloy-primitives = { version = "0.4.2" }
-anyhow = "1.0.75"
+# Workspace
+tokio.workspace = true
+anyhow.workspace = true
+async-trait.workspace = true
+alloy-primitives.workspace = true
