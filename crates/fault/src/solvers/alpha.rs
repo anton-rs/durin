@@ -221,19 +221,19 @@ pub mod rules {
 mod test {
     use super::*;
     use crate::{providers::AlphabetTraceProvider, ClaimData, FaultDisputeSolver};
-    use alloy_primitives::{hex, Address, U128};
+    use alloy_primitives::{hex, Address, U128, U256};
     use durin_primitives::{Claim, DisputeSolver, GameStatus};
     use tokio::sync::Mutex;
 
     fn mocks() -> (
         FaultDisputeSolver<
-            [u8; 1],
+            [u8; 32],
             AlphabetTraceProvider,
-            AlphaClaimSolver<[u8; 1], AlphabetTraceProvider>,
+            AlphaClaimSolver<[u8; 32], AlphabetTraceProvider>,
         >,
         Claim,
     ) {
-        let provider = AlphabetTraceProvider::new(b'a', 4);
+        let provider = AlphabetTraceProvider::new(b'a' as u64, 4);
         let claim_solver = AlphaClaimSolver::new(provider);
         let solver = FaultDisputeSolver::new(claim_solver);
         let root_claim = Claim::from_slice(&hex!(
@@ -425,11 +425,21 @@ mod test {
         let (solver, root_claim) = mocks();
         let cases = [
             (
-                FaultSolverResponse::Step(true, 4, Arc::new([b'a']), Arc::new([])),
+                FaultSolverResponse::Step(
+                    true,
+                    4,
+                    Arc::new(U256::from(b'a').to_be_bytes()),
+                    Arc::new([]),
+                ),
                 true,
             ),
             (
-                FaultSolverResponse::Step(false, 4, Arc::new([b'b']), Arc::new([])),
+                FaultSolverResponse::Step(
+                    false,
+                    4,
+                    Arc::new(U256::from(b'b').to_be_bytes()),
+                    Arc::new([]),
+                ),
                 false,
             ),
         ];

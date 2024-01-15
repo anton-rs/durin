@@ -1,4 +1,4 @@
-//! This module contains the implementation of the [crate::TraceProvider] trait for calling out to `cannon` to fetch 
+//! This module contains the implementation of the [crate::TraceProvider] trait for calling out to `cannon` to fetch
 //! state witnesses and proof values.
 
 use crate::{Gindex, Position, TraceProvider};
