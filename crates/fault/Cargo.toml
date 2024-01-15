@@ -8,23 +8,23 @@ version.workspace = true
 authors.workspace = true
 
 [dependencies]
+# Workspace
+anyhow.workspace = true
+tokio.workspace = true
+async-trait.workspace = true
+alloy-primitives.workspace = true
+
 # Internal
 durin-primitives = { path = "../primitives" }
 
 # External
-
-alloy-primitives = "0.6.0"
 alloy-sol-types = "0.6.0"
 alloy-rpc-client = { git = "https://github.com/alloy-rs/alloy" }
 alloy-transport = { git = "https://github.com/alloy-rs/alloy" }
 alloy-transport-http = { git = "https://github.com/alloy-rs/alloy" }
-anyhow = "1.0.79"
-
-# Async
-tokio = { version = "1.35.1", features = ["macros"] }
+serde = { version = "1.0.195", features = ["derive"] }
 url = "2.5.0"
 reqwest = "0.11.23"
-async-trait = "0.1.77"
 futures = "0.3.30"
 
 [dev-dependencies]

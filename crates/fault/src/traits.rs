@@ -1,6 +1,7 @@
 //! This module holds traits related to the [FaultDisputeGame]
 
 use crate::{state::ClaimData, FaultDisputeState, FaultSolverResponse, Position};
+use anyhow::Result;
 use durin_primitives::{Claim, DisputeGame};
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -34,7 +35,7 @@ pub trait FaultClaimSolver<T: AsRef<[u8]>, P: TraceProvider<T>> {
         world: Arc<Mutex<FaultDisputeState>>,
         claim_index: usize,
         attacking_root: bool,
-    ) -> anyhow::Result<FaultSolverResponse<T>>;
+    ) -> Result<FaultSolverResponse<T>>;
 
     /// Returns a shared reference to the [TraceProvider] that the solver uses to fetch the state of the VM and
     /// commitments to it.
@@ -46,19 +47,19 @@ pub trait FaultClaimSolver<T: AsRef<[u8]>, P: TraceProvider<T>> {
 #[async_trait::async_trait]
 pub trait TraceProvider<P: AsRef<[u8]>> {
     /// Returns the raw absolute prestate (in bytes).
-    async fn absolute_prestate(&self) -> anyhow::Result<Arc<P>>;
+    async fn absolute_prestate(&self) -> Result<Arc<P>>;
 
     /// Returns the absolute prestate hash.
-    async fn absolute_prestate_hash(&self) -> anyhow::Result<Claim>;
+    async fn absolute_prestate_hash(&self) -> Result<Claim>;
 
     /// Returns the raw state (in bytes) at the given position.
-    async fn state_at(&self, position: Position) -> anyhow::Result<Arc<P>>;
+    async fn state_at(&self, position: Position) -> Result<Arc<P>>;
 
     /// Returns the state hash at the given position.
-    async fn state_hash(&self, position: Position) -> anyhow::Result<Claim>;
+    async fn state_hash(&self, position: Position) -> Result<Claim>;
 
     /// Returns the raw proof for the commitment at the given position.
-    async fn proof_at(&self, position: Position) -> anyhow::Result<Arc<[u8]>>;
+    async fn proof_at(&self, position: Position) -> Result<Arc<[u8]>>;
 }
 
 /// The [Gindex] trait defines the interface of a generalized index within a binary tree.

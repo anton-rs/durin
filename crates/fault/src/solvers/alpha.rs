@@ -6,6 +6,7 @@ use crate::{
     ClaimData, FaultClaimSolver, FaultDisputeGame, FaultDisputeState, FaultSolverResponse, Gindex,
     Position, TraceProvider,
 };
+use anyhow::{anyhow, Result};
 use durin_primitives::Claim;
 use std::{marker::PhantomData, sync::Arc};
 use tokio::sync::Mutex;
@@ -41,7 +42,7 @@ where
         world: Arc<Mutex<FaultDisputeState>>,
         claim_index: usize,
         attacking_root: bool,
-    ) -> anyhow::Result<FaultSolverResponse<T>> {
+    ) -> Result<FaultSolverResponse<T>> {
         let mut world_lock = world.lock().await;
 
         // Fetch the maximum depth of the game's position tree.
@@ -51,7 +52,7 @@ where
         let claim = world_lock
             .state_mut()
             .get_mut(claim_index)
-            .ok_or(anyhow::anyhow!("Failed to fetch claim from passed state"))?;
+            .ok_or(anyhow!("Failed to fetch claim from passed state"))?;
         let claim_depth = claim.position.depth();
 
         // Mark the claim as visited. This mutates the passed state and must be reverted if an
@@ -160,7 +161,7 @@ where
         provider: &P,
         position: Position,
         observed_claim: &mut ClaimData,
-    ) -> anyhow::Result<Claim> {
+    ) -> Result<Claim> {
         let state_hash = provider.state_hash(position).await.map_err(|e| {
             observed_claim.visited = false;
             e
@@ -173,7 +174,7 @@ where
         provider: &P,
         position: Position,
         observed_claim: &mut ClaimData,
-    ) -> anyhow::Result<Arc<T>> {
+    ) -> Result<Arc<T>> {
         let state_at = provider.state_at(position).await.map_err(|e| {
             observed_claim.visited = false;
             e
@@ -186,7 +187,7 @@ where
         provider: &P,
         position: Position,
         observed_claim: &mut ClaimData,
-    ) -> anyhow::Result<Arc<[u8]>> {
+    ) -> Result<Arc<[u8]>> {
         let proof_at = provider.proof_at(position).await.map_err(|e| {
             observed_claim.visited = false;
             e

@@ -1,6 +1,7 @@
 //! The traits module contains traits used throughout the library.
 
 use crate::{dispute_game::Claim, GameStatus};
+use anyhow::Result;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -41,5 +42,5 @@ pub trait DisputeSolver<DG: DisputeGame, R> {
     /// Returns any available responses computed by the solver provided a [DisputeGame].
     /// The consumer of the response is responsible for dispatching the action associated
     /// with the responses.
-    async fn available_moves(&self, game: Arc<Mutex<DG>>) -> anyhow::Result<Arc<[R]>>;
+    async fn available_moves(&self, game: Arc<Mutex<DG>>) -> Result<Arc<[R]>>;
 }

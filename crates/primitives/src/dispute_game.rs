@@ -1,6 +1,7 @@
 //! Types related to the [crate::DisputeGame] trait.
 
 use alloy_primitives::B256;
+use anyhow::{bail, Error};
 use std::convert::TryFrom;
 
 /// The [Claim] type is an alias to [B256], used to deliniate a claim hash from a regular hash.
@@ -19,13 +20,13 @@ pub enum GameType {
 }
 
 impl TryFrom<u8> for GameType {
-    type Error = anyhow::Error;
+    type Error = Error;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
             0 => Ok(GameType::FaultCannon),
             255 => Ok(GameType::Alphabet),
-            _ => anyhow::bail!("Invalid game type"),
+            _ => bail!("Invalid game type"),
         }
     }
 }
@@ -44,14 +45,14 @@ pub enum GameStatus {
 }
 
 impl TryFrom<u8> for GameStatus {
-    type Error = anyhow::Error;
+    type Error = Error;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
             0 => Ok(GameStatus::InProgress),
             1 => Ok(GameStatus::ChallengerWins),
             2 => Ok(GameStatus::DefenderWins),
-            _ => anyhow::bail!("Invalid game status"),
+            _ => bail!("Invalid game status"),
         }
     }
 }

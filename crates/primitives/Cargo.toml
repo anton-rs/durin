@@ -4,11 +4,12 @@ description = "Primitive types for Durin."
 resolver = "2"
 
 edition.workspace = true
-authors.workspace = true
 version.workspace = true
+authors.workspace = true
 
 [dependencies]
-alloy-primitives = "0.6.0"
-anyhow = "1.0.79"
-async-trait = "0.1.77"
-tokio = { version = "1.35.1", features = ["macros"] }
+# Workspace
+tokio.workspace = true
+anyhow.workspace = true
+async-trait.workspace = true
+alloy-primitives.workspace = true

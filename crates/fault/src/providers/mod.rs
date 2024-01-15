@@ -5,3 +5,6 @@ pub use self::alphabet::AlphabetTraceProvider;
 
 mod output;
 pub use self::output::OutputTraceProvider;
+
+mod split;
+pub use self::split::SplitTraceProvider;

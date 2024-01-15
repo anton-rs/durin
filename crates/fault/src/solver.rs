@@ -4,6 +4,7 @@ use crate::{
     FaultClaimSolver, FaultDisputeGame, FaultDisputeState, FaultSolverResponse, Position,
     TraceProvider,
 };
+use anyhow::Result;
 use durin_primitives::{DisputeGame, DisputeSolver};
 use std::{marker::PhantomData, sync::Arc};
 use tokio::sync::Mutex;
@@ -44,7 +45,7 @@ where
     async fn available_moves(
         &self,
         game: Arc<Mutex<FaultDisputeState>>,
-    ) -> anyhow::Result<Arc<[FaultSolverResponse<T>]>> {
+    ) -> Result<Arc<[FaultSolverResponse<T>]>> {
         let game_lock = game.lock().await;
 
         // Fetch the local opinion on the root claim.

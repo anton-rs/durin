@@ -1,6 +1,8 @@
-//! This module contains the implementation of the [crate::TraceProvider] trait for the mock Alphabet VM.
+//! This module contains the implementation of the [crate::TraceProvider] trait for fetching output roots from the
+//! rollup node.
 
-use crate::{Position, TraceProvider};
+use crate::{Gindex, Position, TraceProvider};
+use alloy_primitives::{keccak256, B256};
 use alloy_rpc_client::RpcClient;
 use alloy_transport::TransportResult;
 use alloy_transport_http::Http;
@@ -14,14 +16,14 @@ use std::sync::Arc;
 pub struct OutputTraceProvider {
     pub rpc_client: RpcClient<Http<Client>>,
     pub starting_block_number: u64,
-    pub leaf_depth: u64,
+    pub leaf_depth: u8,
 }
 
 impl OutputTraceProvider {
     pub fn try_new(
         l2_archive_url: String,
         starting_block_number: u64,
-        leaf_depth: u64,
+        leaf_depth: u8,
     ) -> Result<Self> {
         let rpc_client = RpcClient::builder().reqwest_http(Url::parse(&l2_archive_url)?);
         Ok(Self {
@@ -32,26 +34,42 @@ impl OutputTraceProvider {
     }
 }
 
+#[derive(serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct OutputAtBlockResponse {
+    pub output_root: B256,
+}
+
 #[async_trait::async_trait]
 impl TraceProvider<[u8; 32]> for OutputTraceProvider {
-    async fn absolute_prestate(&self) -> anyhow::Result<Arc<[u8; 32]>> {
-        todo!()
-        // let transport_result: TransportResult<> = self.rpc_client.prepare("optimism_outputAtBlock", (self.starting_block_number)).await.map_err(|e| anyhow::anyhow!(e))?
+    async fn absolute_prestate(&self) -> Result<Arc<[u8; 32]>> {
+        let result: TransportResult<OutputAtBlockResponse> = self
+            .rpc_client
+            .prepare("optimism_outputAtBlock", (self.starting_block_number))
+            .await;
+        Ok(Arc::new(*result?.output_root))
     }
 
-    async fn absolute_prestate_hash(&self) -> anyhow::Result<Claim> {
-        todo!()
+    async fn absolute_prestate_hash(&self) -> Result<Claim> {
+        Ok(keccak256(self.absolute_prestate().await?.as_slice()))
     }
 
-    async fn state_at(&self, position: Position) -> anyhow::Result<Arc<[u8; 32]>> {
-        todo!()
+    async fn state_at(&self, position: Position) -> Result<Arc<[u8; 32]>> {
+        let result: TransportResult<OutputAtBlockResponse> = self
+            .rpc_client
+            .prepare(
+                "optimism_outputAtBlock",
+                (self.starting_block_number + position.trace_index(self.leaf_depth)),
+            )
+            .await;
+        Ok(Arc::new(*result?.output_root))
     }
 
-    async fn state_hash(&self, position: Position) -> anyhow::Result<Claim> {
-        todo!()
+    async fn state_hash(&self, position: Position) -> Result<Claim> {
+        Ok(keccak256(self.state_at(position).await?.as_slice()))
     }
 
-    async fn proof_at(&self, _: Position) -> anyhow::Result<Arc<[u8]>> {
-        todo!()
+    async fn proof_at(&self, _: Position) -> Result<Arc<[u8]>> {
+        unimplemented!("Proofs are not supported for the OutputTraceProvider")
     }
 }

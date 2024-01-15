@@ -3,6 +3,7 @@
 use crate::{Gindex, Position, TraceProvider, VMStatus};
 use alloy_primitives::{keccak256, U256};
 use alloy_sol_types::{sol, SolType};
+use anyhow::Result;
 use durin_primitives::Claim;
 use std::{convert::TryInto, sync::Arc};
 
@@ -29,18 +30,18 @@ impl AlphabetTraceProvider {
 
 #[async_trait::async_trait]
 impl TraceProvider<[u8; 1]> for AlphabetTraceProvider {
-    async fn absolute_prestate(&self) -> anyhow::Result<Arc<[u8; 1]>> {
+    async fn absolute_prestate(&self) -> Result<Arc<[u8; 1]>> {
         Ok(Arc::new([self.absolute_prestate]))
     }
 
-    async fn absolute_prestate_hash(&self) -> anyhow::Result<Claim> {
+    async fn absolute_prestate_hash(&self) -> Result<Claim> {
         let prestate = U256::from(self.absolute_prestate);
         let mut prestate_hash = keccak256(<sol!(uint256)>::abi_encode(&prestate));
         prestate_hash[0] = VMStatus::Unfinished as u8;
         Ok(prestate_hash)
     }
 
-    async fn state_at(&self, position: Position) -> anyhow::Result<Arc<[u8; 1]>> {
+    async fn state_at(&self, position: Position) -> Result<Arc<[u8; 1]>> {
         let absolute_prestate = self.absolute_prestate as u64;
         let trace_index = position.trace_index(self.max_depth);
 
@@ -50,7 +51,7 @@ impl TraceProvider<[u8; 1]> for AlphabetTraceProvider {
         Ok(Arc::new([state]))
     }
 
-    async fn state_hash(&self, position: Position) -> anyhow::Result<Claim> {
+    async fn state_hash(&self, position: Position) -> Result<Claim> {
         let state_sol = (
             U256::from(position.trace_index(self.max_depth)),
             U256::from(self.state_at(position).await?[0]),
@@ -60,7 +61,7 @@ impl TraceProvider<[u8; 1]> for AlphabetTraceProvider {
         Ok(state_hash)
     }
 
-    async fn proof_at(&self, _: Position) -> anyhow::Result<Arc<[u8]>> {
+    async fn proof_at(&self, _: Position) -> Result<Arc<[u8]>> {
         Ok(Arc::new([]))
     }
 }

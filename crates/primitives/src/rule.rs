@@ -5,7 +5,10 @@
 //! the state back if successful or an error if not. They are used to validate state
 //! transitions in tests where the various solvers in durin suggest a state transition.
 
-pub type Rule<T> = Box<dyn Fn(T) -> anyhow::Result<T>>;
+#[allow(unused)]
+use anyhow::{anyhow, Result};
+
+pub type Rule<T> = Box<dyn Fn(T) -> Result<T>>;
 
 #[macro_export]
 macro_rules! chain_rules {
@@ -35,21 +38,21 @@ mod test {
             if state < 10 {
                 Ok(state)
             } else {
-                Err(anyhow::anyhow!("state must be less than 10"))
+                Err(anyhow!("state must be less than 10"))
             }
         });
         let rule_double_10: Rule<u32> = Box::new(|state: u32| {
             if state * 2 == 10 {
                 Ok(state)
             } else {
-                Err(anyhow::anyhow!("state must be half of 10"))
+                Err(anyhow!("state must be half of 10"))
             }
         });
         let rule_bitwise: Rule<u32> = Box::new(|state: u32| {
             if state & 0xF == 0b0101 {
                 Ok(state)
             } else {
-                Err(anyhow::anyhow!("state must be 5"))
+                Err(anyhow!("state must be 5"))
             }
         });
 
@@ -65,21 +68,21 @@ mod test {
             if state < 10 {
                 Ok(state)
             } else {
-                Err(anyhow::anyhow!("state must be less than 10"))
+                Err(anyhow!("state must be less than 10"))
             }
         });
         let rule_double_11: Rule<u32> = Box::new(|state: u32| {
             if state * 2 == 11 {
                 Ok(state)
             } else {
-                Err(anyhow::anyhow!("state must be half of 11"))
+                Err(anyhow!("state must be half of 11"))
             }
         });
         let rule_bitwise: Rule<u32> = Box::new(|state: u32| {
             if state & 0xF == 0b0101 {
                 Ok(state)
             } else {
-                Err(anyhow::anyhow!("state must be 5"))
+                Err(anyhow!("state must be 5"))
             }
         });
 
