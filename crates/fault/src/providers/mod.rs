@@ -8,3 +8,6 @@ pub use self::output::OutputTraceProvider;
 
 mod split;
 pub use self::split::SplitTraceProvider;
+
+mod cannon;
+pub use self::cannon::CannonTraceProvider;
