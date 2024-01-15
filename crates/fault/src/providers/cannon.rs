@@ -1,11 +1,10 @@
 //! This module contains the implementation of the [crate::TraceProvider] trait for calling out to `cannon` to fetch
 //! state witnesses and proof values.
 
-use crate::{Gindex, Position, TraceProvider};
-use alloy_primitives::keccak256;
+use crate::{Position, TraceProvider};
 use anyhow::Result;
 use durin_primitives::Claim;
-use std::{marker::PhantomData, sync::Arc};
+use std::sync::Arc;
 
 /// The [CannonTraceProvider] is a [TraceProvider] that runs `cannon` to retrieve state witnesses and proof values.
 pub struct CannonTraceProvider {
@@ -13,20 +12,20 @@ pub struct CannonTraceProvider {
 }
 
 #[async_trait::async_trait]
-impl TraceProvider<[u8; 32]> for CannonTraceProvider {
-    async fn absolute_prestate(&self) -> Result<Arc<[u8; 32]>> {
+impl TraceProvider for CannonTraceProvider {
+    async fn absolute_prestate(&self, _: Position) -> Result<Arc<[u8]>> {
         todo!()
     }
 
-    async fn absolute_prestate_hash(&self) -> Result<Claim> {
+    async fn absolute_prestate_hash(&self, _: Position) -> Result<Claim> {
         todo!()
     }
 
-    async fn state_at(&self, position: Position) -> Result<Arc<[u8; 32]>> {
+    async fn state_at(&self, _: Position) -> Result<Arc<[u8]>> {
         todo!()
     }
 
-    async fn state_hash(&self, position: Position) -> Result<Claim> {
+    async fn state_hash(&self, _: Position) -> Result<Claim> {
         todo!()
     }
 

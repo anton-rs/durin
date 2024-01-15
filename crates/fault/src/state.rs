@@ -32,6 +32,8 @@ pub struct FaultDisputeState {
     /// The status of the dispute game.
     status: GameStatus,
     /// The max depth of the position tree.
+    pub split_depth: u8,
+    /// The max depth of the position tree.
     pub max_depth: u8,
 }
 
@@ -40,12 +42,14 @@ impl FaultDisputeState {
         state: Vec<ClaimData>,
         root_claim: Claim,
         status: GameStatus,
+        split_depth: u8,
         max_depth: u8,
     ) -> Self {
         Self {
             state,
             root_claim,
             status,
+            split_depth,
             max_depth,
         }
     }

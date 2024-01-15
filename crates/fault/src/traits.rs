@@ -20,7 +20,7 @@ pub trait FaultDisputeGame: DisputeGame {
 /// A [FaultClaimSolver] is a solver that finds the correct response to a given [durin_primitives::Claim]
 /// within a [FaultDisputeGame].
 #[async_trait::async_trait]
-pub trait FaultClaimSolver<T: AsRef<[u8]>, P: TraceProvider<T>> {
+pub trait FaultClaimSolver<P: TraceProvider> {
     /// Finds the best move against a [crate::ClaimData] in a given [FaultDisputeState].
     ///
     /// ### Takes
@@ -35,7 +35,7 @@ pub trait FaultClaimSolver<T: AsRef<[u8]>, P: TraceProvider<T>> {
         world: Arc<Mutex<FaultDisputeState>>,
         claim_index: usize,
         attacking_root: bool,
-    ) -> Result<FaultSolverResponse<T>>;
+    ) -> Result<FaultSolverResponse>;
 
     /// Returns a shared reference to the [TraceProvider] that the solver uses to fetch the state of the VM and
     /// commitments to it.
@@ -45,15 +45,15 @@ pub trait FaultClaimSolver<T: AsRef<[u8]>, P: TraceProvider<T>> {
 /// A [TraceProvider] is a type that can provide the raw state (in bytes) at a given [Position] within
 /// a [FaultDisputeGame].
 #[async_trait::async_trait]
-pub trait TraceProvider<P: AsRef<[u8]>> {
+pub trait TraceProvider {
     /// Returns the raw absolute prestate (in bytes).
-    async fn absolute_prestate(&self) -> Result<Arc<P>>;
+    async fn absolute_prestate(&self, position: Position) -> Result<Arc<[u8]>>;
 
     /// Returns the absolute prestate hash.
-    async fn absolute_prestate_hash(&self) -> Result<Claim>;
+    async fn absolute_prestate_hash(&self, position: Position) -> Result<Claim>;
 
     /// Returns the raw state (in bytes) at the given position.
-    async fn state_at(&self, position: Position) -> Result<Arc<P>>;
+    async fn state_at(&self, position: Position) -> Result<Arc<[u8]>>;
 
     /// Returns the state hash at the given position.
     async fn state_hash(&self, position: Position) -> Result<Claim>;

@@ -4,7 +4,7 @@ members = ["crates/*"]
 
 [workspace.package]
 edition = "2021"
-version = "0.0.1"
+version = "0.1.0"
 authors = ["clabby"]
 
 [workspace.dependencies]

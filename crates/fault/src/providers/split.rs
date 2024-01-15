@@ -2,53 +2,78 @@
 //! based off of the input depth. This implementation can be used to compose several layers of bisection.
 
 use crate::{Gindex, Position, TraceProvider};
-use alloy_primitives::keccak256;
 use anyhow::Result;
 use durin_primitives::Claim;
-use std::{marker::PhantomData, sync::Arc};
+use std::sync::Arc;
 
 /// The [SplitTraceProvider] is a [TraceProvider] that composes two trace providers together based off of the input depth.
-pub struct SplitTraceProvider<T, TOP, BOTTOM>
+pub struct SplitTraceProvider<Top, Bottom>
 where
-    T: AsRef<[u8]> + Send + Sync,
-    TOP: TraceProvider<T>,
-    BOTTOM: TraceProvider<T>,
+    Top: TraceProvider,
+    Bottom: TraceProvider,
 {
-    pub top: TOP,
-    pub bottom: BOTTOM,
+    pub top: Top,
+    pub bottom: Bottom,
     pub split_depth: u8,
-    pub _phantom: PhantomData<T>,
+}
+
+impl<Top, Bottom> SplitTraceProvider<Top, Bottom>
+where
+    Top: TraceProvider,
+    Bottom: TraceProvider,
+{
+    pub fn new(top: Top, bottom: Bottom, split_depth: u8) -> Self {
+        Self {
+            top,
+            bottom,
+            split_depth,
+        }
+    }
 }
 
 #[async_trait::async_trait]
-impl<T, TOP, BOTTOM> TraceProvider<T> for SplitTraceProvider<T, TOP, BOTTOM>
+impl<Top, Bottom> TraceProvider for SplitTraceProvider<Top, Bottom>
 where
-    T: AsRef<[u8]> + Send + Sync,
-    TOP: TraceProvider<T> + Sync,
-    BOTTOM: TraceProvider<T> + Sync,
+    Top: TraceProvider + Sync,
+    Bottom: TraceProvider + Sync,
 {
-    async fn absolute_prestate(&self) -> Result<Arc<T>> {
-        todo!()
+    async fn absolute_prestate(&self, position: Position) -> Result<Arc<[u8]>> {
+        if position.depth() <= self.split_depth {
+            self.top.absolute_prestate(position).await
+        } else {
+            self.bottom.absolute_prestate(position).await
+        }
     }
 
-    async fn absolute_prestate_hash(&self) -> Result<Claim> {
-        todo!()
+    async fn absolute_prestate_hash(&self, position: Position) -> Result<Claim> {
+        if position.depth() <= self.split_depth {
+            self.top.absolute_prestate_hash(position).await
+        } else {
+            self.bottom.absolute_prestate_hash(position).await
+        }
     }
 
-    async fn state_at(&self, position: Position) -> Result<Arc<T>> {
+    async fn state_at(&self, position: Position) -> Result<Arc<[u8]>> {
         if position.depth() <= self.split_depth {
             self.top.state_at(position).await
         } else {
-            // TODO: Pass relative position based on split depth?
             self.bottom.state_at(position).await
         }
     }
 
     async fn state_hash(&self, position: Position) -> Result<Claim> {
-        Ok(keccak256(self.state_at(position).await?.as_ref()))
+        if position.depth() <= self.split_depth {
+            self.top.state_hash(position).await
+        } else {
+            self.bottom.state_hash(position).await
+        }
     }
 
-    async fn proof_at(&self, _: Position) -> Result<Arc<[u8]>> {
-        todo!()
+    async fn proof_at(&self, position: Position) -> Result<Arc<[u8]>> {
+        if position.depth() <= self.split_depth {
+            self.top.proof_at(position).await
+        } else {
+            self.bottom.proof_at(position).await
+        }
     }
 }

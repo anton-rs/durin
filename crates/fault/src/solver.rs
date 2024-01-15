@@ -12,40 +12,35 @@ use tokio::sync::Mutex;
 /// A [FaultDisputeSolver] is a [DisputeSolver] that is played over a fault proof VM backend. The solver is responsible
 /// for honestly responding to any given [ClaimData] in a given [FaultDisputeState]. It uses a [TraceProvider] to fetch
 /// the absolute prestate of the VM as well as the state at any given [Position] within the tree.
-pub struct FaultDisputeSolver<T, P, S>
+pub struct FaultDisputeSolver<S, P>
 where
-    T: AsRef<[u8]>,
-    P: TraceProvider<T>,
-    S: FaultClaimSolver<T, P>,
+    S: FaultClaimSolver<P>,
+    P: TraceProvider,
 {
     pub inner: S,
-    _phantom_t: PhantomData<T>,
-    _phantom_p: PhantomData<P>,
+    _phantom: PhantomData<P>,
 }
 
-impl<T, P, S> FaultDisputeSolver<T, P, S>
+impl<S, P> FaultDisputeSolver<S, P>
 where
-    T: AsRef<[u8]>,
-    P: TraceProvider<T>,
-    S: FaultClaimSolver<T, P>,
+    S: FaultClaimSolver<P>,
+    P: TraceProvider,
 {
-    pub fn provider(&self) -> &P {
+    pub fn provider(&self) -> &impl TraceProvider {
         self.inner.provider()
     }
 }
 
 #[async_trait::async_trait]
-impl<T, P, S> DisputeSolver<FaultDisputeState, FaultSolverResponse<T>>
-    for FaultDisputeSolver<T, P, S>
+impl<S, P> DisputeSolver<FaultDisputeState, FaultSolverResponse> for FaultDisputeSolver<S, P>
 where
-    T: AsRef<[u8]> + Sync + Send,
-    P: TraceProvider<T> + Sync,
-    S: FaultClaimSolver<T, P> + Sync,
+    S: FaultClaimSolver<P> + Sync,
+    P: TraceProvider + Sync,
 {
     async fn available_moves(
         &self,
         game: Arc<Mutex<FaultDisputeState>>,
-    ) -> Result<Arc<[FaultSolverResponse<T>]>> {
+    ) -> Result<Arc<[FaultSolverResponse]>> {
         let game_lock = game.lock().await;
 
         // Fetch the local opinion on the root claim.
@@ -79,19 +74,17 @@ where
     }
 }
 
-impl<T, P, S> FaultDisputeSolver<T, P, S>
+impl<S, P> FaultDisputeSolver<S, P>
 where
-    T: AsRef<[u8]>,
-    P: TraceProvider<T>,
-    S: FaultClaimSolver<T, P>,
+    S: FaultClaimSolver<P>,
+    P: TraceProvider,
 {
     const ROOT_CLAIM_POSITION: Position = 1;
 
     pub fn new(claim_solver: S) -> Self {
         Self {
             inner: claim_solver,
-            _phantom_t: PhantomData,
-            _phantom_p: PhantomData,
+            _phantom: PhantomData,
         }
     }
 }

@@ -1,5 +1,7 @@
-//! This module contains implementations of the [crate::FaultClaimSolver] trait for various
-//! solving methods and resolvers.
+//! This module contains implementations of the [crate::FaultClaimSolver] trait for various solving methods
+//! and resolvers.
 
-mod alpha;
-pub use self::alpha::*;
+#[deprecated(since = "0.1.0")]
+pub mod alpha;
+
+pub mod alpha_chad;

@@ -1,6 +1,6 @@
 //! The fault module contains types and traits related to the FaultDisputeGame.
 
-#![allow(unused, dead_code)]
+#![allow(dead_code, unused_imports)]
 
 #[cfg(test)]
 extern crate proptest;
